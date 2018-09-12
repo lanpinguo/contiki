@@ -121,6 +121,23 @@ const LedResourceType LedsIDZ401V1[] = {
   }
 };
 
+const LedResourceType LedsMXCHIP[] = {
+  {
+    "D1", /* Green LED */
+    PORTA,
+    6
+  },
+	{
+		"D2", /* Green LED */
+		PORTB,
+		5
+	},
+  {
+    "D3", /* Yellow LED */
+    PORTB,
+    6
+  }
+};
 
 const ButtonResourceType ButtonsMB851A[] = {
   {
@@ -178,6 +195,23 @@ const ButtonResourceType ButtonsIDZ401V1[] = {
   
 };
 
+const ButtonResourceType ButtonsMXCHIP[] = {
+  {
+    "S1",
+    PORTB,
+    3
+  },
+  {
+    "S2",
+    PORTA,
+    7
+  },
+  {
+    "S3",
+    PORTC,
+    5
+  }
+};
 
 const TempSensorResourceType stlm20PB7noDiv = {
   "STLM20",
@@ -232,6 +266,12 @@ const BoardIOType ioIDZ401V1 = {
   LedsIDZ401V1,
   ButtonsIDZ401V1,  
 };
+
+const BoardIOType ioMXCHIP = {
+  LedsMXCHIP,
+  ButtonsMXCHIP,  
+};
+
 
 const BoardResourcesType MB851A = {
   "MB851 A",
@@ -365,6 +405,16 @@ const BoardResourcesType IDZ401V1 = {
   NULL,
 };
 
+const BoardResourcesType MXCHIP = {
+  "mxchip",
+  ( BOARD_HAS_FTDI),
+  3,
+  3,
+  &ioMXCHIP,
+  NULL,
+};
+
+
 static const BoardResourcesType *boardList [] = {
   &MB851A,
   &MB851B,
@@ -377,7 +427,8 @@ static const BoardResourcesType *boardList [] = {
   &MB950B,
   &MB951A,
   &MB951B,
-  &IDZ401V1
+  &IDZ401V1,
+  &MXCHIP
 };
 
 BoardResourcesType const *boardDescription = NULL;
@@ -386,9 +437,11 @@ BoardResourcesType const *boardDescription = NULL;
 
 void halBoardInit(void)
 {
-  char boardName[16];
+  char boardName[16] = "mxchip";
   int8_t i;
+
   boardDescription = NULL;
+#if 0
 #ifdef EMBERZNET_HAL
   halCommonGetToken(boardName, TOKEN_MFG_BOARD_NAME);
 #else
@@ -400,6 +453,7 @@ void halBoardInit(void)
     boardName[i] = 0;
     i--;
   }
+#endif
 
   for (i = 0; i < (sizeof(boardList)/4) ; i++) 
     if (strcmp(boardName, (boardList[i])->name) == 0) {
@@ -598,8 +652,8 @@ void boardPrintStringDescription(void)
     printf ("*************************************\r\n");
     printf ("Board name = %s\r\n", boardDescription->name);
     printf ("*************************************\r\n");
-    printf("Number of leds on the board: %d\n", boardDescription->leds);
-    printf("Number of buttons on the board: %d\n", boardDescription->buttons);
+    printf("Number of leds on the board: %d\r\n", boardDescription->leds);
+    printf("Number of buttons on the board: %d\r\n", boardDescription->buttons);
     printLeds();
     printButtons();
     if (boardDescription->mems) {
