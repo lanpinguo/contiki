@@ -216,8 +216,10 @@
  *             line number of the call that failed. 
  *             If expr is true, it returns no value.
  */
+static inline void assert_failed(u8 * file, u32 line){
+	printf("\r\n%d@%s",(int)line,file);
+}
 #define assert_param(expr) ((expr) ? (void)0 : assert_failed((u8 *)__FILE__, __LINE__))
-void assert_failed(u8 * file, u32 line);
 #else
 #define assert_param(expr) ((void)0)
 #endif /* DEBUG */
