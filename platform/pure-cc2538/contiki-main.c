@@ -141,11 +141,11 @@ set_rf_params(void)
 int
 main(void)
 {
-
+#if 0
 	REG(GPIO_C_BASE + GPIO_DIR) = 0x0F; /* PC2~PC3 output*/
 	REG(GPIO_C_BASE + GPIO_AFSEL) = 0x0;
 	REG(GPIO_C_BASE + GPIO_DATA) = 0x01;
-	
+#endif	
   nvic_init();
   ioc_init();
   sys_ctrl_init();
@@ -156,10 +156,12 @@ main(void)
 
   leds_init();
   fade(LEDS_YELLOW);
-  
+
+#if 0  
 	REG(GPIO_C_BASE + GPIO_DIR) |= 0x0F; /* PC2~PC3 output*/
 	REG(GPIO_C_BASE + GPIO_AFSEL) = 0x0;
 	REG(GPIO_C_BASE + GPIO_DATA) = 0x0D;
+#endif
 
   process_init();
 
@@ -199,11 +201,11 @@ main(void)
 #endif
 
   PRINTF(" Net: ");
-  PRINTF("%s\n", NETSTACK_NETWORK.name);
+  PRINTF("%s\r\n", NETSTACK_NETWORK.name);
   PRINTF(" MAC: ");
-  PRINTF("%s\n", NETSTACK_MAC.name);
+  PRINTF("%s\r\n", NETSTACK_MAC.name);
   PRINTF(" RDC: ");
-  PRINTF("%s\n", NETSTACK_RDC.name);
+  PRINTF("%s\r\n", NETSTACK_RDC.name);
 
   /* Initialise the H/W RNG engine. */
   random_init(0);
@@ -240,11 +242,13 @@ main(void)
   watchdog_start();
   fade(LEDS_ORANGE);
 
-	printf("\r\nGPIOC:%x",REG(GPIO_C_BASE + GPIO_DATA));
+
+#if 0
 	REG(GPIO_C_BASE + GPIO_DIR) |= 0x0F; /* PC2~PC3 output*/
 	REG(GPIO_C_BASE + GPIO_AFSEL) = 0x0;
 	REG(GPIO_C_BASE + GPIO_DATA) = 0x0F;
 	printf("\r\n2 GPIOC:%x",REG(GPIO_C_BASE + GPIO_DATA));
+#endif	
   while(1) {
     uint8_t r;
     do {
