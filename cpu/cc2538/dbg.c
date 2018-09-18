@@ -109,6 +109,7 @@ puts(const char *s)
     putchar(*s++);
     i++;
   }
+  putchar('\r');
   putchar('\n');
   return i;
 }

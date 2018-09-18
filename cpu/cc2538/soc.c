@@ -90,10 +90,10 @@ soc_print_info(void)
   uint32_t features = soc_get_features();
 
   printf("CC2538: ID: 0x%04lx, rev.: PG%d.%d, Flash: %lu KiB, SRAM: %lu KiB, "
-           "AES/SHA: %u, ECC/RSA: %u\n"
-         "System clock: %lu Hz\n"
-         "I/O clock: %lu Hz\n"
-         "Reset cause: %s\n",
+           "AES/SHA: %u, ECC/RSA: %u\r\n"
+         "System clock: %lu Hz\r\n"
+         "I/O clock: %lu Hz\r\n"
+         "Reset cause: %s\r\n",
          rom_util_get_chip_id(),
          rev >> 4, rev & 0x0f,
          rom_util_get_flash_size() >> 10,
