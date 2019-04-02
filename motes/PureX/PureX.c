@@ -352,116 +352,16 @@ uint8_t CRC8(uint8_t crc, uint8_t byte)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(humidity_sensor_process, ev, data)
 {
-	uint8_t rc;
-  static struct etimer et;
-	uint8_t buf[4];
-	int tmp;
-  float RH,Temp;
+	static uint8_t rc = 0;
+  //static struct etimer et;
   
-  //struct broadcast_message msg;
-
-  //PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
   PROCESS_BEGIN();
 
-  //broadcast_open(&broadcast, 129, &broadcast_call);
-	i2c_init(GPIO_D_NUM,1,GPIO_D_NUM,0,I2C_SCL_NORMAL_BUS_SPEED);
-	printf("\r\ni2c_init done %x \r\n",(int)(2^16));
-	etimer_set(&et, CLOCK_SECOND * 1);
-	rc = i2c_single_send(0x40,0xfe);
-	if(rc){
-		printf("Reset chip error (%x)\r\n",rc);
-	}
-	PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-  while(1) {
-		int a,b;
-		uint8_t acc;
-		
-    /* Send a broadcast every 16 - 32 seconds */
-    etimer_set(&et, CLOCK_SECOND * 2);
-		rc = i2c_single_send(0x40,0xe3);
-		if(rc){
-			printf("Trigger temp measure error(%x)\r\n",rc);
-			goto error_process;
-		}
-		rc = i2c_burst_receive(0x40,buf,3);
-		if(rc){
-			printf("receive temp measure error(%x)\r\n",rc);
-			goto error_process;
-		}
-		acc = CRC8(0,buf[0]);
-		acc = CRC8(acc,buf[1]);
-
-		if(acc != buf[2]){
-			printf("Read error: %02x%02x ,crc %02x, acc = %02x\r\n",buf[0],buf[1],buf[2],acc);
-		}
-
-		tmp = (buf[0]<<8) | (buf[1] & 0xFC);
-		Temp = -46.85 + 175.72*(float)tmp/MAX_RANGE;
-		a = (int)Temp;
-		b = (Temp - a)*100;
-		printf("Current Temp : %d.%02d C\r\n",a,b);
-
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-
-    etimer_set(&et, CLOCK_SECOND * 2);
-
-		rc = i2c_single_send(0x40,0xe5);
-		if(rc){
-			printf("Trigger RH measure error(%d)\r\n",rc);
-			goto error_process;
-		}
-		rc = i2c_burst_receive(0x40,buf,3);
-		if(rc){
-			printf("receive temp measure error(%x)\r\n",rc);
-			goto error_process;
-		}
-		acc = CRC8(0,buf[0]);
-		acc = CRC8(acc,buf[1]);
-
-		if(acc != buf[2]){
-			printf("Read error: %02x%02x ,crc %02x, acc = %02x\r\n",buf[0],buf[1],buf[2],acc);
-		}
-
-		tmp = (buf[0]<<8) | (buf[1] & 0xFC);
-		RH = -6 + 125.0*((float)tmp/MAX_RANGE);
-		a = (int)RH;
-		b = (RH - a)*100;
-		printf("Current RH : %d.%02d \r\n",a,b);
-
-
-		goto no_error;
-
-
-
-error_process:
-		rc = i2c_single_send(0x40,0xfe);
-		if(rc){
-			printf("Reset chip error (%x)\r\n",rc);
-		}
-		
-no_error:
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-#if 0
-    etimer_set(&et, CLOCK_SECOND * 2);
-
-		rc = i2c_single_send(0x40,0xe5);
-		printf("Trigger RH measure (%d)\r\n",rc);
-		rc = i2c_burst_receive(0x40,buf,3);
-		printf("Read done (%d): %02x%02x ,crc %02x\r\n",rc,buf[0],buf[1],buf[2]);
-
-		tmp = (buf[0]<<8) | (buf[1] & 0xFC);
-		RH = -6 + 125.0*(tmp/2^16);
-
-		printf("Current RH : %f \r\n",RH);
-
-
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-#endif    
-  }
+  rc += 1;
+  //etimer_set(&et, CLOCK_SECOND * 2);
+	printf("This is OTA tester (%x)\r\n",rc);
+  //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
   PROCESS_END();
 }
