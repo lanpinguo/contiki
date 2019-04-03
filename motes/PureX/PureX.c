@@ -350,6 +350,7 @@ uint8_t CRC8(uint8_t crc, uint8_t byte)
 
 #define MAX_RANGE (65536.0)
 /*---------------------------------------------------------------------------*/
+
 PROCESS_THREAD(humidity_sensor_process, ev, data)
 {
 	static uint8_t rc = 0;
@@ -361,13 +362,16 @@ PROCESS_THREAD(humidity_sensor_process, ev, data)
   rc += 1;
   //etimer_set(&et, CLOCK_SECOND * 2);
 	printf("This is OTA tester (%x)\r\n",rc);
+
+
+
+	//EnterNvmApplication(0,5);
+	
   //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
-
-
 
 
 /*---------------------------------------------------------------------------*/

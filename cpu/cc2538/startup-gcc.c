@@ -45,9 +45,12 @@
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
 extern int main(void);
+extern int boot_main(void);
+
 /*---------------------------------------------------------------------------*/
 /* System handlers provided here */
 void reset_handler(void);
+void boot_reset_handler(void);
 void nmi_handler(void);
 void default_handler(void);
 
@@ -275,12 +278,45 @@ void(*const vectors[])(void) =
   default_handler,            /* 162 MACTimer */
 };
 /*---------------------------------------------------------------------------*/
+
+#if FLASH_OTA_BOOT_MANAGER
+__attribute__((__section__(".boot_vectors"), used))
+void(*const boot_vectors[])(void) =
+{
+  (void (*)(void))((unsigned long)stack + sizeof(stack)),   /* Stack pointer */
+  boot_reset_handler,         /* Reset handler */
+  nmi_handler,                /* The NMI handler */
+  default_handler,            /* The hard fault handler */
+  default_handler,            /* 4 The MPU fault handler */
+  default_handler,            /* 5 The bus fault handler */
+  default_handler,            /* 6 The usage fault handler */
+  0,                          /* 7 Reserved */
+  0,                          /* 8 Reserved */
+  0,                          /* 9 Reserved */
+  0,                          /* 10 Reserved */
+  svcall_handler,             /* 11 SVCall handler */
+  default_handler,            /* 12 Debug monitor handler */
+  0,                          /* 13 Reserved */
+  pendsv_handler,             /* 14 The PendSV handler */
+  clock_isr,                  /* 15 The SysTick handler */
+  default_handler,            /* 16 GPIO Port A */
+  default_handler,            /* 17 GPIO Port B */
+  default_handler,            /* 18 GPIO Port C */
+  default_handler,            /* 19 GPIO Port D */
+  0,                          /* 20 none */
+};
+#endif 
+
 __attribute__((__section__(".flashcca")))
 const flash_cca_lock_page_t flash_cca_lock_page = {
   FLASH_CCA_BOOTLDR_CFG,        /* Boot loader backdoor configuration */
   FLASH_CCA_IMAGE_VALID,        /* Image valid */
-  &vectors,                     /* Vector table */
-  /* Unlock all pages and debug */
+#if FLASH_OTA_BOOT_MANAGER
+  &boot_vectors,                /*Boot Manager Vector table */
+#else
+	&vectors,										 /* Normal Vector table */
+#endif
+/* Unlock all pages and debug */
   { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -326,5 +362,27 @@ reset_handler(void)
   while(1);
 }
 /*---------------------------------------------------------------------------*/
+
+#if FLASH_OTA_BOOT_MANAGER
+/*---------------------------------------------------------------------------*/
+__attribute__((__section__(".boot_fw"), used))
+void boot_reset_handler(void)
+{
+  REG(SYS_CTRL_EMUOVR) = 0xFF;
+
+  /* Copy the data segment initializers from flash to SRAM. */
+  //rom_util_memcpy(&_data, &_ldata, &_edata - &_data);
+
+  /* Zero-fill the bss segment. */
+  //rom_util_memset(&_bss, 0, &_ebss - &_bss);
+
+  /* call the application's entry point. */
+  boot_main();
+
+  /* End here if main () returns */
+  while(1);
+}
+/*---------------------------------------------------------------------------*/
+#endif
 
 /** @} */

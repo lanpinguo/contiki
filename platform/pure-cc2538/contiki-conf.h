@@ -502,6 +502,12 @@ typedef uint32_t rtimer_clock_t;
 #ifndef CCM_STAR_CONF
 #define CCM_STAR_CONF           cc2538_ccm_star_driver /**< AES-CCM* driver */
 #endif
+
+
+#ifndef FLASH_OTA_BOOT_MANAGER
+#define FLASH_OTA_BOOT_MANAGER 	1
+#endif
+
 /** @} */
 /*---------------------------------------------------------------------------*/
 
