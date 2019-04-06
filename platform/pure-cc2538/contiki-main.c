@@ -138,15 +138,41 @@ set_rf_params(void)
 /**
  * \brief Main routine for the cc2538dk platform
  */
+
+void debug_led(void)
+{
+#if 1
+		volatile unsigned long ulLoopCount;
+		REG(GPIO_A_BASE + GPIO_DIR) = 0x04; /* PA2 output*/
+	
+		// Loop forever.
+		while(1)
+		{
+				// Turn Blue	LED.
+				REG(GPIO_A_BASE + GPIO_DATA + (0x04 << 2)) ^= 0x04;
+	
+				// Delay for a bit
+				for(ulLoopCount = 200000; ulLoopCount > 0; ulLoopCount--)
+				{
+				}
+		};
+#endif
+}
+ 
 int
 main(void)
 {
+
+
+
 #if 0
 	REG(GPIO_C_BASE + GPIO_DIR) = 0x0F; /* PC2~PC3 output*/
 	REG(GPIO_C_BASE + GPIO_AFSEL) = 0x0;
 	REG(GPIO_C_BASE + GPIO_DATA) = 0x01;
 #endif	
   nvic_init();
+
+
   ioc_init();
   sys_ctrl_init();
   clock_init();
@@ -154,6 +180,7 @@ main(void)
   rtimer_init();
   gpio_init();
 
+//	debug_led();
   leds_init();
   fade(LEDS_YELLOW);
 
