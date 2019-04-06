@@ -66,6 +66,7 @@ SECTIONS
     {
         _text = .;
         KEEP(*(.vectors))
+        KEEP(*(.image_data))
         *(.text*)
         *(.rodata*)
         _etext = .;
