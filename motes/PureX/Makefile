@@ -1,6 +1,8 @@
 CONTIKI = ../..
 CONTIKI_PROJECT = PureX
 
+TARGET = pure-cc2538
+
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 APPS = serial-shell
 CONTIKI_WITH_RIME = 1
