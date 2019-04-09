@@ -5,7 +5,8 @@ TARGET = pure-cc2538
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 APPS = serial-shell
-CONTIKI_WITH_RIME = 1
+#CONTIKI_WITH_RIME = 1
+CONTIKI_WITH_IPV6 = 1
 SOURCE_LDSCRIPT = ./cc2538_boot.lds
 
 all: $(CONTIKI_PROJECT) hexImage
