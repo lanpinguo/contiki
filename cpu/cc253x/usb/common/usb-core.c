@@ -7,7 +7,7 @@
 #include "string-descriptors.h"
 
 #include <stdio.h>
-
+#define DEBUG 1
 #ifdef DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
@@ -196,6 +196,8 @@ get_string_descriptor()
 static void
 get_configuration_descriptor()
 {
+  
+  printf("get_configuration_descriptor\n");  
   usb_send_ctrl_response((unsigned char *)configuration_head,
                          configuration_head->wTotalLength);
 }

@@ -80,6 +80,7 @@ struct uip_eth_addr default_uip_ethaddr = {{0x02,0x00,0x00,0x00,0x00,0x02}};
 uint8_t *
 usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
 {
+  printf("get_string_descriptor: %d bytes\n", string);  
   switch (string) {
   case 0:
     return (uint8_t *)&lang_id;
@@ -205,7 +206,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
       if (events & USB_EP_EVENT_NOTIFICATION)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
-        /* printf("Received: %d bytes\n", uip_len);  */
+        printf("Received: %d bytes\n", uip_len);  
         memcpy(uip_buf, recv_data, uip_len);
 
 #if 0	

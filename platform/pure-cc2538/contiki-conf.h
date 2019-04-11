@@ -509,6 +509,8 @@ typedef uint32_t rtimer_clock_t;
 #define FLASH_OTA_BOOT_MANAGER 	1
 #endif
 
+#define DEBUG 1
+#define USB_ETH_CONF_ENABLE     1
 /** @} */
 /*---------------------------------------------------------------------------*/
 

@@ -71,7 +71,7 @@ void crypto_isr(void);
 void pka_isr(void);
 
 /* Link in the USB ISR only if USB is enabled */
-#if USB_SERIAL_CONF_ENABLE
+#if USB_SERIAL_CONF_ENABLE | USB_ETH_CONF_ENABLE
 void usb_isr(void);
 #else
 #define usb_isr default_handler

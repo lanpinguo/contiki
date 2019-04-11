@@ -144,7 +144,7 @@ PROCESS_THREAD(humidity_sensor_process, ev, data)
 
   rc += 1;
   //etimer_set(&et, CLOCK_SECOND * 2);
-	printf("This is OTA tester (%x)\r\n",rc);
+	printf("\r\nThis is OTA tester (%x)\r\n",rc);
 
 
 
