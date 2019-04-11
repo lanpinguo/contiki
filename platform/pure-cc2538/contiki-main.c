@@ -216,6 +216,9 @@ main(void)
   usb_serial_set_input(serial_line_input_byte);
 #endif
 
+  usb_cdc_eth_setup();
+
+
   serial_line_init();
 
   INTERRUPTS_ENABLE();
