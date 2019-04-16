@@ -181,8 +181,8 @@ main(void)
   gpio_init();
 
 //	debug_led();
-  leds_init();
-  fade(LEDS_YELLOW);
+  //leds_init();
+  //fade(LEDS_YELLOW);
 
 #if 0  
 	REG(GPIO_C_BASE + GPIO_DIR) |= 0x0F; /* PC2~PC3 output*/
@@ -216,13 +216,14 @@ main(void)
   usb_serial_set_input(serial_line_input_byte);
 #endif
 
+#if USB_ETH_CONF_ENABLE
   usb_cdc_eth_setup();
-
+#endif
 
   serial_line_init();
 
   INTERRUPTS_ENABLE();
-  fade(LEDS_GREEN);
+  //fade(LEDS_GREEN);
 
   PUTS(CONTIKI_VERSION_STRING);
   PUTS(BOARD_STRING);
@@ -270,7 +271,7 @@ main(void)
   autostart_start(autostart_processes);
 
   watchdog_start();
-  fade(LEDS_ORANGE);
+  //fade(LEDS_ORANGE);
 
 
 #if 0

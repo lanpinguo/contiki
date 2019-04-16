@@ -45,7 +45,7 @@
 const struct usb_st_device_descriptor device_descriptor =
   {
     sizeof(struct usb_st_device_descriptor),
-    DEVICE,
+    USB_DT_DEVICE,
     0x0200,
     CDC,
     0,
@@ -78,7 +78,7 @@ const struct configuration_st {
     /* Configuration */
     {
       sizeof(configuration_block.configuration),
-      CONFIGURATION,
+      USB_DT_CONFIGURATION,
       sizeof(configuration_block),
       2,
       1,
@@ -88,7 +88,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.comm),
-      INTERFACE,
+      USB_DT_INTERFACE,
       0,
       0,
       1,
@@ -125,7 +125,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_notification),
-      ENDPOINT,
+      USB_DT_ENDPOINT,
       0x81,
       0x03,
       USB_EP1_SIZE,
@@ -133,7 +133,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.data),
-      INTERFACE,
+      USB_DT_INTERFACE,
       1,
       0,
       2,
@@ -144,7 +144,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_in),
-      ENDPOINT,
+      USB_DT_ENDPOINT,
       0x82,
       0x02,
       USB_EP2_SIZE,
@@ -152,7 +152,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_out),
-      ENDPOINT,
+      USB_DT_ENDPOINT,
       0x03,
       0x02,
       USB_EP3_SIZE,

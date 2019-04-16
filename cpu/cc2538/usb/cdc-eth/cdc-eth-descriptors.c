@@ -3,22 +3,26 @@
 #include <contiki-conf.h>
 #include <usb-arch.h>
 
+#define VENDOR_ID             0x0451 /* Vendor: TI */
+
+#define PRODUCT_ID            0x1000
+
 const struct usb_st_device_descriptor device_descriptor =
   {
     sizeof(struct usb_st_device_descriptor),
-    DEVICE,
+    USB_DT_DEVICE,
     0x0210,
     CDC,
     0,
     0,
     CTRL_EP_SIZE,
-    0xffff,
-    0xffff,
-    0x0010,
-    2,
-    1,
-    3,
-    1
+    VENDOR_ID,
+    PRODUCT_ID,
+    0x0010, /*bcdDevice*/
+    2,/*iManufacturer*/
+    1,/*iProduct*/
+    3,/*iSerialNumber*/
+    1 /*bNumConfigurations*/
   };
 
 const struct configuration_st {
@@ -27,18 +31,22 @@ const struct configuration_st {
   struct usb_cdc_header_func_descriptor header;
   struct usb_cdc_union_func_descriptor union_descr;
   struct usb_cdc_ethernet_func_descriptor ethernet;
-#if 1
   struct usb_st_endpoint_descriptor ep_notification;
-#endif
   struct usb_st_interface_descriptor data;
   struct usb_st_endpoint_descriptor ep_in;
   struct usb_st_endpoint_descriptor ep_out;
+
+  struct usb_st_bos_descriptor bos;
+  struct usb_st_ext_cap_descriptor dev_ext_cap;
+  struct usb_st_ss_cap_descriptor dev_ss_cap;
+  
+
 } BYTE_ALIGNED configuration_block =
   {
     /* Configuration */
     {
       sizeof(configuration_block.configuration),
-      CONFIGURATION,
+      USB_DT_CONFIGURATION,
       sizeof(configuration_block),
       2,
       1,
@@ -48,7 +56,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.comm),
-      INTERFACE,
+      USB_DT_INTERFACE,
       0,
       0,
       1,
@@ -70,11 +78,12 @@ const struct configuration_st {
       0, /* Master */
       {1}  /* Slave */
     },
+    /*ethernet*/
     {
       sizeof(configuration_block.ethernet),
       CS_INTERFACE,
       CDC_FUNC_DESCR_ETHERNET,
-      4,
+      4, /*iMACAddress*/
       0, /* No statistics */
       UIP_CONF_BUFFER_SIZE - UIP_CONF_LLH_LEN + 14,
       0, /* No multicast filters */
@@ -82,7 +91,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_notification),
-      ENDPOINT,
+      USB_DT_ENDPOINT,
       0x83,
       0x03,
       8,
@@ -90,7 +99,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.data),
-      INTERFACE,
+      USB_DT_INTERFACE,
       1,
       0,
       2,
@@ -101,7 +110,7 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_in),
-      ENDPOINT,
+      USB_DT_ENDPOINT,
       0x81,
       0x02,
       64,
@@ -109,14 +118,41 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_out),
-      ENDPOINT,
+      USB_DT_ENDPOINT,
       0x02,
       0x02,
       64,
       0
+    },
+    {
+      sizeof(configuration_block.bos),
+      USB_DT_BOS,
+      (sizeof(configuration_block.bos) + sizeof(configuration_block.dev_ext_cap) \
+      + sizeof(configuration_block.dev_ss_cap)),
+      2,
+    },
+    {
+      sizeof(configuration_block.dev_ext_cap),
+      USB_DT_DEVICE_CAPABILITY,
+      USB_CAP_TYPE_EXT,
+      USB_LPM_SUPPORT,
+    },
+    {
+      sizeof(configuration_block.dev_ss_cap),
+      USB_DT_DEVICE_CAPABILITY,
+      USB_SS_CAP_TYPE,
+      0,
+      0x000e,
+      USB_LOW_SPEED_OPERATION,
+      1,
+      0x0065
     }
-          
   };
 
-const struct usb_st_configuration_descriptor const *configuration_head =
+const struct usb_st_configuration_descriptor  *configuration_head =
 (struct usb_st_configuration_descriptor const*)&configuration_block;
+
+const struct usb_st_bos_descriptor  *bos_head =
+(struct usb_st_bos_descriptor const*)&configuration_block.bos;
+
+

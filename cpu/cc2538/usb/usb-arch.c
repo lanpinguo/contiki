@@ -53,6 +53,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+
 /*---------------------------------------------------------------------------*/
 #ifdef USB_PULLUP_PORT
 #define USB_PULLUP_PORT_BASE     GPIO_PORT_TO_BASE(USB_PULLUP_PORT)

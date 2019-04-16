@@ -82,7 +82,7 @@
 #define LEDS_GREEN              16 /**< LED3 (Green)  -> PC4 */
 #define LEDS_ORANGE             32 /**< LED4 (Orange) -> PC5 */
 
-#if USB_SERIAL_CONF_ENABLE
+#if USB_SERIAL_CONF_ENABLE | USB_ETH_CONF_ENABLE
 #define LEDS_CONF_ALL           14
 #define LEDS_RED                LEDS_ORANGE
 #else

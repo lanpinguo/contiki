@@ -68,19 +68,32 @@ static const struct product product = {
   }
 };
 
+/*---------------------------------------------------------------------------*/
+struct eth_mac_adderss{
+  uint8_t size;
+  uint8_t type;
+  uint16_t string[12];
+};
+static const struct eth_mac_adderss ethaddr = {
+  sizeof(ethaddr),
+  3,
+  {
+    '0','2','0','0','0','0','0','0','0','0','1','2'
+  }
+};
 
 
 #define DATA_IN 0x81
 #define DATA_OUT 0x02
 #define INTERRUPT_IN 0x83
 
-struct uip_eth_addr default_uip_ethaddr = {{0x02,0x00,0x00,0x00,0x00,0x02}};
+struct uip_eth_addr default_uip_ethaddr = {{0x02,0x00,0x00,0x00,0x00,0x12}};
 
 /*---------------------------------------------------------------------------*/
 uint8_t *
 usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
 {
-  printf("get_string_descriptor: %d bytes\n", string);  
+  printf("get_string_descriptor: Index %d \n", string);  
   switch (string) {
   case 0:
     return (uint8_t *)&lang_id;
@@ -90,6 +103,8 @@ usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
     return (uint8_t *)&product;
   case 3:
     return (uint8_t *)&serial_nr;
+  case 4:
+    return (uint8_t *)&ethaddr;
   default:
     return NULL;
   }
@@ -206,7 +221,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
       if (events & USB_EP_EVENT_NOTIFICATION)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
-        printf("Received: %d bytes\n", uip_len);  
+        printf("\r\nReceived: %d bytes\n", uip_len);  
         memcpy(uip_buf, recv_data, uip_len);
 
 #if 0	
