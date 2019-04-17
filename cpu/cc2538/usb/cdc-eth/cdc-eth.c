@@ -97,7 +97,7 @@ static const struct eth_mac_adderss ethaddr = {
 struct uip_eth_addr default_uip_ethaddr = {{0x02,0x00,0x00,0x00,0x00,0x12}};
 
 /* For Diagnosis*/
-uint32_t loopback = 1;
+uint32_t loopback = 0;
 
 /*---------------------------------------------------------------------------*/
 uint8_t *
@@ -286,7 +286,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
               memcpy(xmit_data, uip_buf, uip_len);
               xmit_buffer[0].next = NULL;
               xmit_buffer[0].data = xmit_data;
-              xmit_buffer[0].left = uip_len;
+              xmit_buffer[0].left = 32;
               xmit_buffer[0].flags = USB_BUFFER_SHORT_END;
 
               usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
