@@ -92,9 +92,9 @@ const struct configuration_st {
     {
       sizeof(configuration_block.ep_notification),
       USB_DT_ENDPOINT,
-      0x83,
+      INTERRUPT_IN,
       0x03,
-      8,
+      USB_EP3_SIZE,
       100
     },
     {
@@ -111,17 +111,17 @@ const struct configuration_st {
     {
       sizeof(configuration_block.ep_in),
       USB_DT_ENDPOINT,
-      0x81,
+      DATA_IN,
       0x02,
-      64,
+      USB_EP1_SIZE,
       0
     },
     {
       sizeof(configuration_block.ep_out),
       USB_DT_ENDPOINT,
+      DATA_OUT,
       0x02,
-      0x02,
-      64,
+      USB_EP2_SIZE,
       0
     },
     {

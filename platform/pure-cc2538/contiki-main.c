@@ -162,16 +162,7 @@ void debug_led(void)
 int
 main(void)
 {
-
-
-
-#if 0
-	REG(GPIO_C_BASE + GPIO_DIR) = 0x0F; /* PC2~PC3 output*/
-	REG(GPIO_C_BASE + GPIO_AFSEL) = 0x0;
-	REG(GPIO_C_BASE + GPIO_DATA) = 0x01;
-#endif	
   nvic_init();
-
 
   ioc_init();
   sys_ctrl_init();
@@ -180,7 +171,7 @@ main(void)
   rtimer_init();
   gpio_init();
 
-//	debug_led();
+  //debug_led();
   //leds_init();
   //fade(LEDS_YELLOW);
 
@@ -231,11 +222,13 @@ main(void)
   soc_print_info();
 #endif
 
-  PRINTF(" Net: ");
+
+  PRINTF("\r\nSys Status: 0x%08lx\r\n", REG(SYS_CTRL_CLOCK_STA));
+  PRINTF("Net: ");
   PRINTF("%s\r\n", NETSTACK_NETWORK.name);
-  PRINTF(" MAC: ");
+  PRINTF("MAC: ");
   PRINTF("%s\r\n", NETSTACK_MAC.name);
-  PRINTF(" RDC: ");
+  PRINTF("RDC: ");
   PRINTF("%s\r\n", NETSTACK_RDC.name);
 
   /* Initialise the H/W RNG engine. */

@@ -1,10 +1,19 @@
 #include <cdc-eth.h>
+#include "cdc.h"
 #include <usb-api.h>
+#include "usb-core.h"
+
 //#include <uip_arp.h>
 #include <stdio.h>
 #include <string.h>
 //#include <net/ipv4/uip-fw.h>
 
+#define DEBUG 1
+#ifdef DEBUG
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
 
 /**
  * The Ethernet header.
@@ -25,7 +34,8 @@ struct lang_id {
   uint8_t type;
   uint16_t langid;
 };
-static const struct lang_id lang_id = { sizeof(lang_id), 3, 0x0409 };
+/* Language ID string (US English) */
+static const struct lang_id lang_id = { sizeof(lang_id), 3, 0x0409 }; 
 /*---------------------------------------------------------------------------*/
 struct serial_nr {
   uint8_t size;
@@ -83,17 +93,17 @@ static const struct eth_mac_adderss ethaddr = {
 };
 
 
-#define DATA_IN 0x81
-#define DATA_OUT 0x02
-#define INTERRUPT_IN 0x83
 
 struct uip_eth_addr default_uip_ethaddr = {{0x02,0x00,0x00,0x00,0x00,0x12}};
+
+/* For Diagnosis*/
+uint32_t loopback = 1;
 
 /*---------------------------------------------------------------------------*/
 uint8_t *
 usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
 {
-  printf("get_string_descriptor: Index %d \n", string);  
+  PRINTF("get_string_descriptor: Index %d \n", string);  
   switch (string) {
   case 0:
     return (uint8_t *)&lang_id;
@@ -114,6 +124,8 @@ usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
 static unsigned int
 handle_cdc_eth_requests()
 {
+  PRINTF("CDC request %02x %02x\n", usb_setup_buffer.bmRequestType,
+         usb_setup_buffer.bRequest);
   return 0;
 }
 
@@ -135,6 +147,8 @@ static uint8_t recv_data[UIP_BUFSIZE];
 
 static USBBuffer xmit_buffer[3];
 static uint8_t xmit_data[UIP_BUFSIZE];
+static uint8_t xmit_idle = 1;
+
 
 static void
 init_recv_buffer()
@@ -217,11 +231,19 @@ PROCESS_THREAD(usb_eth_process, ev , data)
           }
         }
       }
+      
+      events = usb_get_ep_events(DATA_IN);
+      if (events & USB_EP_EVENT_NOTIFICATION)
+      {
+        xmit_idle = 1;
+      }
+
+      
       events = usb_get_ep_events(DATA_OUT);
       if (events & USB_EP_EVENT_NOTIFICATION)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
-        printf("\r\nReceived: %d bytes\n", uip_len);  
+        printf("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
         memcpy(uip_buf, recv_data, uip_len);
 
 #if 0	
@@ -232,28 +254,46 @@ PROCESS_THREAD(usb_eth_process, ev , data)
         } else 
 #endif /* NETSTACK_CONF_WITH_IPV6 */
 #endif
-        if(BUF->type == uip_htons(UIP_ETHTYPE_IP)) {
-        uip_len -= sizeof(struct uip_eth_hdr);
-        tcpip_input();
-        } else if(BUF->type == uip_htons(UIP_ETHTYPE_ARP))
+        if(loopback)
         {
-          //uip_arp_arpin();
-          /* If the above function invocation resulted in data that
-          should be sent out on the network, the global variable
-          uip_len is set to a value > 0. */
-          if (uip_len > 0) 
+          uip_len -= sizeof(struct uip_eth_hdr);
+          if ((uip_len > 0) && (xmit_idle != 0)) 
           {
             memcpy(xmit_data, uip_buf, uip_len);
             xmit_buffer[0].next = NULL;
             xmit_buffer[0].data = xmit_data;
             xmit_buffer[0].left = uip_len;
-            xmit_buffer[0].flags = USB_BUFFER_SHORT_END;
-
+            xmit_buffer[0].flags = USB_BUFFER_IN | USB_BUFFER_NOTIFY;
+            xmit_idle = 0;
             usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
-            /* printf("Sent: %d bytes\n", uip_len); */
+            printf("\r\nSent: %d bytes\r\n", uip_len);
           }
         }
+        else
+        {
+          if(BUF->type == uip_htons(UIP_ETHTYPE_IP)) {
+            uip_len -= sizeof(struct uip_eth_hdr);
+            tcpip_input();
+          } 
+          else if(BUF->type == uip_htons(UIP_ETHTYPE_ARP))
+          {
+            //uip_arp_arpin();
+            /* If the above function invocation resulted in data that
+            should be sent out on the network, the global variable
+            uip_len is set to a value > 0. */
+            if (uip_len > 0) 
+            {
+              memcpy(xmit_data, uip_buf, uip_len);
+              xmit_buffer[0].next = NULL;
+              xmit_buffer[0].data = xmit_data;
+              xmit_buffer[0].left = uip_len;
+              xmit_buffer[0].flags = USB_BUFFER_SHORT_END;
 
+              usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
+              /* printf("Sent: %d bytes\n", uip_len); */
+            }
+          }
+        }
         init_recv_buffer();
         usb_submit_recv_buffer(DATA_OUT, &recv_buffer);
       }
