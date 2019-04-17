@@ -59,7 +59,7 @@ const struct configuration_st {
       USB_DT_INTERFACE,
       0,
       0,
-      1,
+      2,
       CDC,
        ETHERNET_NETWORKING_CONTROL_MODEL,
       0,
