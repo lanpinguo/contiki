@@ -55,15 +55,15 @@ const struct configuration_st {
       50
     },
     {
-      sizeof(configuration_block.comm),
-      USB_DT_INTERFACE,
-      0,
-      0,
-      2,
-      CDC,
-       ETHERNET_NETWORKING_CONTROL_MODEL,
-      0,
-      0
+      sizeof(configuration_block.comm), /* 0 bLength */
+      USB_DT_INTERFACE,                 /* 1 bDescriptorType - Interface */
+      0,                                /* 2 bInterfaceNumber - Interface 0 */
+      0,                                /* 3 bAlternateSetting */
+      2,                                /* 4 bNumEndpoints */
+      CDC,                              /* 5 bInterfaceClass */
+      ETHERNET_NETWORKING_CONTROL_MODEL,/* 6 bInterfaceSubClass - Ethernet Control Model */
+      0,                                /* 7 bInterfaceProtocol - No specific protocol */
+      0                                 /* 8 iInterface - No string descriptor */
     },
     {
       sizeof(configuration_block.header),
@@ -90,12 +90,12 @@ const struct configuration_st {
       0 /* No wake-up filters */
     },
     {
-      sizeof(configuration_block.ep_notification),
-      USB_DT_ENDPOINT,
-      INTERRUPT_IN,
-      0x03,
-      USB_EP3_SIZE,
-      100
+      sizeof(configuration_block.ep_notification),/*bLength*/
+      USB_DT_ENDPOINT,/*bDescriptorType*/
+      INTERRUPT_IN,   /*bEndpointAddress*/
+      0x03,           /*bmAttributes*/
+      USB_EP3_SIZE,   /*wMaxPacketSize*/
+      100             /*bInterval*/
     },
     {
       sizeof(configuration_block.data),
@@ -109,20 +109,20 @@ const struct configuration_st {
       0
     },
     {
-      sizeof(configuration_block.ep_in),
-      USB_DT_ENDPOINT,
-      DATA_IN,
-      0x02,
-      USB_EP1_SIZE,
-      0
+      sizeof(configuration_block.ep_in),  /*bLength*/
+      USB_DT_ENDPOINT,/*bDescriptorType*/
+      DATA_IN,        /*bEndpointAddress*/
+      0x02,           /*bmAttributes*/
+      USB_EP1_SIZE,   /*wMaxPacketSize*/
+      0               /*bInterval*/
     },
     {
-      sizeof(configuration_block.ep_out),
-      USB_DT_ENDPOINT,
-      DATA_OUT,
-      0x02,
-      USB_EP2_SIZE,
-      0
+      sizeof(configuration_block.ep_out), /*bLength*/
+      USB_DT_ENDPOINT,/*bDescriptorType*/
+      DATA_OUT,       /*bEndpointAddress*/
+      0x02,           /*bmAttributes*/
+      USB_EP2_SIZE,   /*wMaxPacketSize*/
+      0               /*bInterval*/
     },
     {
       sizeof(configuration_block.bos),
