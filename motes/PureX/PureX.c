@@ -69,7 +69,7 @@
 #include "cdc.h"
 #include <usb-api.h>
 #include "usb-core.h"
-
+#include "shell-memdebug.h"
 
 
 static USBBuffer xmit_buffer[3];
@@ -89,6 +89,7 @@ SHELL_COMMAND(pure_command,
 	      &shell_debug_process);
 /*---------------------------------------------------------------------------*/
 static uint8_t pkt_index = 0;
+#define TEST  2
 PROCESS_THREAD(shell_debug_process, ev, data)
 {
 
@@ -98,6 +99,7 @@ PROCESS_THREAD(shell_debug_process, ev, data)
   pkt_index++;
   xmit_data[0] = pkt_index;
   
+#if TEST == 0
   xmit_buffer[0].next = NULL;
   xmit_buffer[0].left = 32;
   xmit_buffer[0].flags = USB_BUFFER_IN;
@@ -116,6 +118,22 @@ PROCESS_THREAD(shell_debug_process, ev, data)
   xmit_buffer[2].data = xmit_data + 64;
 
   usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[2]);
+#else 
+
+  xmit_buffer[0].next = NULL;
+  xmit_buffer[0].left = 64;
+  xmit_buffer[0].flags = USB_BUFFER_IN;
+  xmit_buffer[0].data = xmit_data ;
+  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
+  
+  xmit_buffer[1].next = NULL;
+  xmit_buffer[1].left = 2;
+  xmit_buffer[1].flags = USB_BUFFER_NOTIFY | USB_BUFFER_PACKET_END;
+  xmit_buffer[1].data = xmit_data + 64;
+  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[1]);
+
+
+#endif
   printf("\r\nusbeth_send: %d\r\n", pkt_index);
 
   
@@ -152,6 +170,7 @@ PROCESS_THREAD(pure_x_shell_process, ev, data)
   shell_reboot_init();
   shell_text_init();
   shell_time_init();
+  shell_memdebug_init();
   shell_pure_init();
 #if COFFEE
   shell_coffee_init();

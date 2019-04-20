@@ -97,7 +97,7 @@ static const struct eth_mac_adderss ethaddr = {
 struct uip_eth_addr default_uip_ethaddr = {{0x02,0x00,0x00,0x00,0x00,0x12}};
 
 /* For Diagnosis*/
-uint32_t loopback = 0;
+uint32_t loopback = 1;
 
 /*---------------------------------------------------------------------------*/
 uint8_t *
@@ -244,7 +244,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
         printf("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
-        memcpy(uip_buf, recv_data, uip_len);
+        //memcpy(uip_buf, recv_data, uip_len);
 
 #if 0	
 #if NETSTACK_CONF_WITH_IPV6
@@ -254,6 +254,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
         } else 
 #endif /* NETSTACK_CONF_WITH_IPV6 */
 #endif
+#if 0
         if(loopback)
         {
           uip_len -= sizeof(struct uip_eth_hdr);
@@ -294,6 +295,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
             }
           }
         }
+#endif        
         init_recv_buffer();
         usb_submit_recv_buffer(DATA_OUT, &recv_buffer);
       }

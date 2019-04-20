@@ -842,6 +842,7 @@ fill_buffers(usb_buffer *buffer, uint8_t hw_ep, unsigned int len,
     } else {
       t = len;
     }
+
     len -= t;
     buffer->left -= t;
 
@@ -1178,7 +1179,8 @@ ep_get_data_pkt(uint8_t ep_hw)
   /* Disambiguate UG CNTL bits */
   pkt_len = REG(USB_CNTL) | (REG(USB_CNTH) << 8);
   if(get_receive_capacity(ep->buffer) < pkt_len) {
-    return USB_READ_BLOCK;
+    res = USB_READ_BLOCK;
+    goto GET_PKT_DONE;
   }
 
   if(pkt_len < ep->xfer_size) {
@@ -1187,6 +1189,7 @@ ep_get_data_pkt(uint8_t ep_hw)
 
   res = fill_buffers(ep->buffer, ep_hw, pkt_len, short_packet);
 
+GET_PKT_DONE:
   REG(USB_CSOL) &= ~USB_CSOL_OUTPKT_RDY;
 
   return res;
@@ -1273,6 +1276,7 @@ usb_isr(void)
     }
   }
   if(ep_out_if) {
+    printf("\r\nOIF:0x%08X\r\n",ep_out_if);
     for(i = 1; i < 6; i++) {
       if(ep_out_if & EPxIF(i)) {
         out_ep_interrupt_handler(i);

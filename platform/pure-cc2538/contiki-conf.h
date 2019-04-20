@@ -94,8 +94,9 @@ typedef uint32_t rtimer_clock_t;
 #define CTRL_EP_SIZE                8
 #define USB_EP1_SIZE               32
 #define USB_EP2_SIZE               64
-#define USB_EP3_SIZE               128
-#define USB_EP4_SIZE               128
+#define USB_EP3_SIZE               64
+#define USB_EP4_SIZE               64
+#define USB_EP5_SIZE               256
 #define USB_ARCH_WRITE_NOTIFY       0
 
 #ifndef USB_ARCH_CONF_DMA
@@ -475,9 +476,7 @@ typedef uint32_t rtimer_clock_t;
 /* Network setup for non-IPv6 (rime). */
 #define UIP_CONF_IP_FORWARD                  1
 
-#ifndef UIP_CONF_BUFFER_SIZE
-#define UIP_CONF_BUFFER_SIZE               108
-#endif
+#define UIP_CONF_BUFFER_SIZE               128
 
 #define RIME_CONF_NO_POLITE_ANNOUCEMENTS     0
 
@@ -512,9 +511,12 @@ typedef uint32_t rtimer_clock_t;
 
 #define USB_ETH_CONF_ENABLE     1
 
-#define DATA_IN 0x81
+#define DATA_IN 0x84
 #define DATA_OUT 0x02
 #define INTERRUPT_IN 0x83
+#define DATA_IN_PKT_SIZE_MAX    (USB_EP4_SIZE)
+#define INT_IN_PKT_SIZE_MAX     (USB_EP3_SIZE)
+#define DATA_OUT_PKT_SIZE_MAX   (USB_EP2_SIZE)
 
 
 /** @} */

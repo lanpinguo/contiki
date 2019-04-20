@@ -91,11 +91,11 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_notification),/*bLength*/
-      USB_DT_ENDPOINT,/*bDescriptorType*/
-      INTERRUPT_IN,   /*bEndpointAddress*/
-      0x03,           /*bmAttributes*/
-      USB_EP3_SIZE,   /*wMaxPacketSize*/
-      100             /*bInterval*/
+      USB_DT_ENDPOINT,                            /*bDescriptorType*/
+      INTERRUPT_IN,                               /*bEndpointAddress*/
+      0x03,                                       /*bmAttributes*/
+      INT_IN_PKT_SIZE_MAX,                        /*wMaxPacketSize*/
+      100                                         /*bInterval*/
     },
     {
       sizeof(configuration_block.data),
@@ -110,19 +110,19 @@ const struct configuration_st {
     },
     {
       sizeof(configuration_block.ep_in),  /*bLength*/
-      USB_DT_ENDPOINT,/*bDescriptorType*/
-      DATA_IN,        /*bEndpointAddress*/
-      0x02,           /*bmAttributes*/
-      USB_EP1_SIZE,   /*wMaxPacketSize*/
-      0               /*bInterval*/
+      USB_DT_ENDPOINT,                    /*bDescriptorType*/
+      DATA_IN,                            /*bEndpointAddress*/
+      0x02,                               /*bmAttributes*/
+      DATA_IN_PKT_SIZE_MAX,               /*wMaxPacketSize*/
+      0                                   /*bInterval*/
     },
     {
       sizeof(configuration_block.ep_out), /*bLength*/
-      USB_DT_ENDPOINT,/*bDescriptorType*/
-      DATA_OUT,       /*bEndpointAddress*/
-      0x02,           /*bmAttributes*/
-      USB_EP2_SIZE,   /*wMaxPacketSize*/
-      0               /*bInterval*/
+      USB_DT_ENDPOINT,                    /*bDescriptorType*/
+      DATA_OUT,                           /*bEndpointAddress*/
+      0x02,                               /*bmAttributes*/
+      DATA_OUT_PKT_SIZE_MAX,              /*wMaxPacketSize*/
+      0                                   /*bInterval*/
     },
     {
       sizeof(configuration_block.bos),
