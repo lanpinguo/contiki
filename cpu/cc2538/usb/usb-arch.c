@@ -1276,7 +1276,7 @@ usb_isr(void)
     }
   }
   if(ep_out_if) {
-    printf("\r\nOIF:0x%08X\r\n",ep_out_if);
+    /*printf("\r\nOIF:0x%08X\r\n",ep_out_if);*/
     for(i = 1; i < 6; i++) {
       if(ep_out_if & EPxIF(i)) {
         out_ep_interrupt_handler(i);

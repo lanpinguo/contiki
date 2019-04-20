@@ -7,7 +7,7 @@
 #include "string-descriptors.h"
 
 #include <stdio.h>
-#define DEBUG 1
+
 #ifdef DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
@@ -498,6 +498,7 @@ PROCESS_THREAD(usb_process, ev, data)
           } else if(ctrl_buffer.flags & USB_BUFFER_SETUP) {
             struct USBRequestHandlerHook *hook = usb_request_handler_hooks;
 
+#ifdef DEBUG
             PRINTF("\r\nSetup\n");
             {
               unsigned int i;
@@ -506,7 +507,7 @@ PROCESS_THREAD(usb_process, ev, data)
                 PRINTF(" %02x", ((unsigned char *)&usb_setup_buffer)[i]);
               PRINTF("\r\n");
             }
-
+#endif
             while(hook) {
               const struct USBRequestHandler *handler = hook->handler;
 

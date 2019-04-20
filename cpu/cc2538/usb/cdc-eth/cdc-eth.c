@@ -103,7 +103,7 @@ uint32_t loopback = 1;
 uint8_t *
 usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
 {
-  PRINTF("get_string_descriptor: Index %d \n", string);  
+  /*PRINTF("\r\nget_string_descriptor: Index %d \r\n", string);  */
   switch (string) {
   case 0:
     return (uint8_t *)&lang_id;
@@ -120,14 +120,58 @@ usb_class_get_string_descriptor(uint16_t lang, uint8_t string)
   }
 }
 
+
+static void
+set_packet_filter(uint16_t value,  uint16_t intf)
+{
+  if(value & PACKET_TYPE_PROMISCUOUS){
+    PRINTF("\r\nEnter promiscuous Mode\r\n");
+  }
+
+  //notify_user(USB_CDC_ACM_LINE_CODING);
+  usb_send_ctrl_status();
+}
+
  
 static unsigned int
 handle_cdc_eth_requests()
 {
-  PRINTF("CDC request %02x %02x\n", usb_setup_buffer.bmRequestType,
+  PRINTF("\r\nCDC request %02x %02x\r\n", usb_setup_buffer.bmRequestType,
          usb_setup_buffer.bRequest);
+  switch (usb_setup_buffer.bmRequestType)
+  {
+    case 0x21: /* CDC interface OUT requests */
+      /* Check if it's the right interface */
+      if(usb_setup_buffer.wIndex != 0)
+        return 0;
+      switch (usb_setup_buffer.bRequest) {
+      case SET_CONTROL_LINE_STATE:
+        //notify_user(USB_CDC_ACM_LINE_STATE);
+        usb_send_ctrl_status();
+        return 1;
+
+      case SET_ETHERNET_PACKET_FILTER:
+        {
+          uint16_t filter = usb_setup_buffer.wValue;
+          uint16_t intf =  usb_setup_buffer.wIndex;
+          set_packet_filter(filter,intf);
+          return 1;
+        }
+      }
+      break;
+    case 0xa1:                   /* CDC interface IN requests */
+      if(usb_setup_buffer.wIndex != 0)
+        return 0;
+      switch (usb_setup_buffer.bRequest) {
+      case GET_ENCAPSULATED_RESPONSE:
+        PRINTF("\r\nCDC response\r\n");
+        usb_send_ctrl_status();
+        return 1;
+      }
+  }
   return 0;
 }
+
 
 static const struct USBRequestHandler cdc_eth_request_handler =
   {
