@@ -249,7 +249,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
         {
           if (usb_get_current_configuration() != 0)
           {
-            printf("Configured\n");
+            PRINTF("Configured\n");
             usb_setup_bulk_endpoint(DATA_IN);
             usb_setup_bulk_endpoint(DATA_OUT);
             usb_setup_interrupt_endpoint(INTERRUPT_IN);
@@ -287,7 +287,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
       if (events & USB_EP_EVENT_NOTIFICATION)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
-        printf("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
+        PRINTF("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
         //memcpy(uip_buf, recv_data, uip_len);
 
 #if 0	

@@ -197,7 +197,7 @@ static void
 get_configuration_descriptor()
 {
   
-  printf("get_configuration_descriptor\n");  
+  PRINTF("get_configuration_descriptor\n");  
   usb_send_ctrl_response((unsigned char *)configuration_head,
                          configuration_head->wTotalLength);
 }
@@ -214,7 +214,7 @@ static void
 get_bos_descriptor()
 {
   
-  printf("get_bos_descriptor\r\n");  
+  PRINTF("get_bos_descriptor\r\n");  
   usb_send_ctrl_response((unsigned char *)bos_head,
                          bos_head->wTotalLength);
 }
