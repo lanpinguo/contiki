@@ -72,15 +72,18 @@
 #include "shell-memdebug.h"
 
 
-static USBBuffer xmit_buffer[3];
-static uint8_t xmit_data[UIP_BUFSIZE] = {
+#define TEST  1
+
+#if TEST == 1
+static uint8_t pkt_index = 0;
+static uint8_t test_data[UIP_BUFSIZE] = {
   0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0x08,0x00,0x45,0x00,
   0x00,0x34,0x1b,0x1c,0x40,0x00,0x40,0x06,0x4c,0x1b,0xc0,0xa8,0x02,0x64,0x0d,0xe6,
   0x02,0x9b,0xdb,0x17,0x00,0x16,0xfb,0x07,0x2b,0x89,0x00,0x00,0x00,0x00,0x80,0x02,
   0xfa,0xf0,0x9e,0xd3,0x00,0x00,0x02,0x04,0x05,0xb4,0x01,0x03,0x03,0x08,0x01,0x01,
   0x04,0x02
 };
-
+#endif
 /*---------------------------------------------------------------------------*/
 PROCESS(shell_debug_process, "pure");
 SHELL_COMMAND(pure_command,
@@ -88,53 +91,19 @@ SHELL_COMMAND(pure_command,
 	      "pure [num]: blink LEDs ([num] times)",
 	      &shell_debug_process);
 /*---------------------------------------------------------------------------*/
-static uint8_t pkt_index = 0;
-#define TEST  2
 PROCESS_THREAD(shell_debug_process, ev, data)
 {
 
 
   PROCESS_BEGIN();
 
+  
+#if TEST == 1
   pkt_index++;
-  xmit_data[0] = pkt_index;
-  
-#if TEST == 0
-  xmit_buffer[0].next = NULL;
-  xmit_buffer[0].left = 32;
-  xmit_buffer[0].flags = USB_BUFFER_IN;
-  xmit_buffer[0].data = xmit_data;
-  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
- 
-  xmit_buffer[1].next = NULL;
-  xmit_buffer[1].left = 32;
-  xmit_buffer[1].flags = USB_BUFFER_IN;
-  xmit_buffer[1].data = xmit_data + 32;
-  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[1]);
-
-  xmit_buffer[2].next = NULL;
-  xmit_buffer[2].left = 2;
-  xmit_buffer[2].flags = USB_BUFFER_NOTIFY | USB_BUFFER_SHORT_PACKET;
-  xmit_buffer[2].data = xmit_data + 64;
-
-  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[2]);
-#else 
-
-  xmit_buffer[0].next = NULL;
-  xmit_buffer[0].left = 64;
-  xmit_buffer[0].flags = USB_BUFFER_IN;
-  xmit_buffer[0].data = xmit_data ;
-  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
-  
-  xmit_buffer[1].next = NULL;
-  xmit_buffer[1].left = 2;
-  xmit_buffer[1].flags = USB_BUFFER_NOTIFY | USB_BUFFER_PACKET_END;
-  xmit_buffer[1].data = xmit_data + 64;
-  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[1]);
-
-
-#endif
+  test_data[0] = pkt_index;
+  usbeth_send(test_data,66);
   printf("\r\nusbeth_send: %d\r\n", pkt_index);
+#endif
 
   
 

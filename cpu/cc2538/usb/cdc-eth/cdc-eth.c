@@ -203,20 +203,38 @@ init_recv_buffer()
   recv_buffer.flags = USB_BUFFER_SHORT_END | USB_BUFFER_NOTIFY;
 }
 
-uint8_t
-usbeth_send(void)
+int16_t
+usbeth_send(uint8_t* data,uint16_t len)
 {
-  //if ((xmit_buffer[0].flags & USB_BUFFER_SUBMITTED)) return UIP_FW_DROPPED;
-  //uip_arp_out();
-  memcpy(xmit_data, uip_buf, uip_len);
-  xmit_buffer[0].next = NULL;
-  xmit_buffer[0].left = uip_len;
-  xmit_buffer[0].flags = USB_BUFFER_NOTIFY | USB_BUFFER_SHORT_END;
-  xmit_buffer[0].data = xmit_data;
+  uint16_t offset = 0;
   
-  /* printf("usbeth_send: %d\n", uip_len);  */
-  usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
-  return 0;
+  if(len > UIP_BUFSIZE)
+  {
+    return -1;
+  }
+  
+  memcpy(xmit_data, data, len);
+
+  for(;offset < len;)
+  {
+    xmit_buffer[0].next = NULL;
+    xmit_buffer[0].data = xmit_data + offset;
+    if((len - offset) > DATA_IN_PKT_SIZE_MAX){
+      xmit_buffer[0].left = DATA_IN_PKT_SIZE_MAX;
+      xmit_buffer[0].flags = USB_BUFFER_IN ;
+      offset += DATA_IN_PKT_SIZE_MAX;
+    }
+    else
+    {
+      /* the last segment*/
+      xmit_buffer[0].left = len - offset;
+      xmit_buffer[0].flags = USB_BUFFER_NOTIFY | USB_BUFFER_PACKET_END; ;
+      offset = len;
+    }
+    /* printf("usbeth_send: %d\n", uip_len);  */
+    usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
+  }
+  return len;
 }
 
 /*static struct uip_fw_netif usbethif =
