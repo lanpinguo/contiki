@@ -69,6 +69,9 @@
 #include "ieee-addr.h"
 #include "lpm.h"
 
+#include <cdc-eth.h>
+#include <contikimac.h>
+
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -329,6 +332,8 @@ main(void)
   //fade(LEDS_ORANGE);
 
   cc2538_rf_set_promiscous_mode(0);
+
+  mac_sniffer_callback = usbeth_send;
 
 #if 0
 	REG(GPIO_C_BASE + GPIO_DIR) |= 0x0F; /* PC2~PC3 output*/
