@@ -191,8 +191,14 @@ static struct USBRequestHandlerHook cdc_eth_request_hook =
 static USBBuffer recv_buffer;
 static uint8_t recv_data[UIP_BUFSIZE];
 
+#define XPKT_MAX_LEN   UIP_BUFSIZE + 14 
+#define ETHERTYPE_6LOWPAN		0xA0ED	/* RFC 4944: Transmission of IPv6 Packets over IEEE 802.15.4 Networks */
+
 static USBBuffer xmit_buffer[3];
-static uint8_t xmit_data[UIP_BUFSIZE];
+static uint8_t xmit_data[XPKT_MAX_LEN] = 
+{
+  0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0xA0,0xED
+};
 static uint8_t xmit_idle = 1;
 
 
@@ -205,23 +211,25 @@ init_recv_buffer()
   recv_buffer.flags = USB_BUFFER_SHORT_END | USB_BUFFER_NOTIFY;
 }
 
+
 int16_t
 usbeth_send(uint8_t* data,uint16_t len)
 {
   uint16_t offset = 0;
+  uint16_t total_len = len + 14;
   
-  if(len > UIP_BUFSIZE)
+  if(total_len > XPKT_MAX_LEN)
   {
     return -1;
   }
   
-  memcpy(xmit_data, data, len);
+  memcpy(xmit_data + 14 , data, len);
 
-  for(;offset < len;)
+  for(;offset < total_len;)
   {
     xmit_buffer[0].next = NULL;
     xmit_buffer[0].data = xmit_data + offset;
-    if((len - offset) > DATA_IN_PKT_SIZE_MAX){
+    if((total_len - offset) > DATA_IN_PKT_SIZE_MAX){
       xmit_buffer[0].left = DATA_IN_PKT_SIZE_MAX;
       xmit_buffer[0].flags = USB_BUFFER_IN ;
       offset += DATA_IN_PKT_SIZE_MAX;
@@ -229,9 +237,9 @@ usbeth_send(uint8_t* data,uint16_t len)
     else
     {
       /* the last segment*/
-      xmit_buffer[0].left = len - offset;
+      xmit_buffer[0].left = total_len - offset;
       xmit_buffer[0].flags = USB_BUFFER_NOTIFY | USB_BUFFER_PACKET_END; ;
-      offset = len;
+      offset = total_len;
     }
     /* printf("usbeth_send: %d\n", uip_len);  */
     usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
