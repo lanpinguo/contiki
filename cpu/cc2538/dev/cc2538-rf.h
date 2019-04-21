@@ -180,6 +180,12 @@ void cc2538_rf_set_addr(uint16_t pan);
  * address as the receive address are returned from the RF core.
  */
 void cc2538_rf_set_promiscous_mode(char p);
+
+
+
+int cc2538_rf_ext_ctrl_register(struct radio_extender_driver *ctrl);
+
+
 /*---------------------------------------------------------------------------*/
 #endif /* CC2538_RF_H__ */
 

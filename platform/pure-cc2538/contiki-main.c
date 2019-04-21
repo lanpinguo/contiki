@@ -158,10 +158,69 @@ void debug_led(void)
 		};
 #endif
 }
+
+#define CC2592_PA_EN_PIN      (1<<3) /*PC3*/
+#define CC2592_LNA_EN_PIN     (1<<2) /*PC2*/
+#define CC2592_HGM_PIN        (1<<2) /*PD2*/
+
+int cc2592_init(void)
+{
+  PRINTF("\r\ncc2592 init\r\n");
+  REG(GPIO_C_BASE + GPIO_DIR) |= (CC2592_PA_EN_PIN | CC2592_LNA_EN_PIN);
+  REG(GPIO_D_BASE + GPIO_DIR) |= CC2592_HGM_PIN; 
+  return 0;
+}
+
+
+/** Enable Rx. */
+int cc2592_rx_enable(void)
+{
+  //PRINTF("\r\ncc2592_rx_enable\r\n");
+  REG(GPIO_C_BASE + GPIO_DATA + (CC2592_LNA_EN_PIN << 2)) = CC2592_LNA_EN_PIN;
+  return 0;
+}
+
+/** Enable Tx. */
+int cc2592_tx_enable(void)
+{
+  //PRINTF("\r\ncc2592_tx_enable\r\n");
+  REG(GPIO_C_BASE + GPIO_DATA + (CC2592_LNA_EN_PIN << 2)) = ~CC2592_LNA_EN_PIN;
+  REG(GPIO_C_BASE + GPIO_DATA + (CC2592_PA_EN_PIN << 2)) = CC2592_PA_EN_PIN;
+  return 0;
+}
+
+/** Turn the radio on. */
+int cc2592_hgm_enable(void)
+{
+  //PRINTF("\r\ncc2592_hgm_enable\r\n");
+  REG(GPIO_D_BASE + GPIO_DATA + (CC2592_HGM_PIN << 2)) = CC2592_HGM_PIN;
+  return 0;
+}
+
+/** Turn the extender off. */
+int cc2592_off(void)
+{
+  //PRINTF("\r\ncc2592_off\r\n");
+  REG(GPIO_C_BASE + GPIO_DATA + (CC2592_LNA_EN_PIN << 2)) = ~CC2592_LNA_EN_PIN;
+  REG(GPIO_C_BASE + GPIO_DATA + (CC2592_PA_EN_PIN << 2)) = ~CC2592_PA_EN_PIN;
+  return 0;
+}
+
+
  
 int
 main(void)
 {
+  
+  struct radio_extender_driver rf_ctrl =
+  {
+    .extender_init = cc2592_init,
+    .extender_rx_enable = cc2592_rx_enable,
+    .extender_tx_enable = cc2592_tx_enable,
+    .extender_hgm_enable = cc2592_hgm_enable,
+    .extender_off = cc2592_off
+  };
+
   nvic_init();
 
   ioc_init();
@@ -239,6 +298,9 @@ main(void)
   process_start(&etimer_process, NULL);
   ctimer_init();
 
+
+  cc2538_rf_ext_ctrl_register(&rf_ctrl);
+
   set_rf_params();
 
 #if CRYPTO_CONF_INIT
@@ -266,6 +328,7 @@ main(void)
   watchdog_start();
   //fade(LEDS_ORANGE);
 
+  cc2538_rf_set_promiscous_mode(0);
 
 #if 0
 	REG(GPIO_C_BASE + GPIO_DIR) |= 0x0F; /* PC2~PC3 output*/

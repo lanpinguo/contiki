@@ -72,10 +72,19 @@
 #include <stdio.h>
 #define DEBUG 0
 #if DEBUG
+#define DEBUG_RX 1
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
 #define PRINTF(...)
 #endif
+
+#if DEBUG_RX
+#define PRINTF_RX(...) printf(__VA_ARGS__)
+#else
+#define PRINTF_RX(...)
+#endif
+
+
 /*---------------------------------------------------------------------------*/
 /* Local RF Flags */
 #define RX_ACTIVE     0x80
@@ -115,6 +124,14 @@ static uint8_t crc_corr;
 /*---------------------------------------------------------------------------*/
 static uint8_t rf_flags;
 static uint8_t rf_channel = CC2538_RF_CHANNEL;
+
+
+
+
+static struct radio_extender_driver rf_ext ;
+
+
+
 
 static int on(void);
 static int off(void);
@@ -441,6 +458,10 @@ on(void)
     rf_flags |= RX_ACTIVE;
   }
 
+  if(rf_ext.extender_rx_enable != NULL )
+    rf_ext.extender_rx_enable();
+
+
   ENERGEST_ON(ENERGEST_TYPE_LISTEN);
   return 1;
 }
@@ -449,7 +470,7 @@ static int
 off(void)
 {
   PRINTF("RF: Off\n");
-
+#if 0
   /* Wait for ongoing TX to complete (e.g. this could be an outgoing ACK) */
   while(REG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_TX_ACTIVE);
 
@@ -464,7 +485,11 @@ off(void)
 
   rf_flags &= ~RX_ACTIVE;
 
+  if(rf_ext.extender_off != NULL )
+    rf_ext.extender_off();
+
   ENERGEST_OFF(ENERGEST_TYPE_LISTEN);
+#endif  
   return 1;
 }
 /*---------------------------------------------------------------------------*/
@@ -476,6 +501,10 @@ init(void)
   if(rf_flags & RF_ON) {
     return 0;
   }
+
+  if(rf_ext.extender_init != NULL )
+    rf_ext.extender_init();
+
 
   /* Enable clock for the RF Core while Running, in Sleep and Deep Sleep */
   REG(SYS_CTRL_RCGCRFC) = 1;
@@ -547,6 +576,8 @@ init(void)
   rf_flags |= RF_ON;
 
   ENERGEST_ON(ENERGEST_TYPE_LISTEN);
+  if(rf_ext.extender_rx_enable != NULL )
+    rf_ext.extender_rx_enable();
 
   return 1;
 }
@@ -643,6 +674,8 @@ transmit(unsigned short transmit_len)
   /* Start the transmission */
   ENERGEST_OFF(ENERGEST_TYPE_LISTEN);
   ENERGEST_ON(ENERGEST_TYPE_TRANSMIT);
+  if(rf_ext.extender_tx_enable != NULL )
+    rf_ext.extender_tx_enable();
 
   CC2538_RF_CSP_ISTXON();
 
@@ -663,6 +696,8 @@ transmit(unsigned short transmit_len)
   }
   ENERGEST_OFF(ENERGEST_TYPE_TRANSMIT);
   ENERGEST_ON(ENERGEST_TYPE_LISTEN);
+  if(rf_ext.extender_rx_enable != NULL )
+    rf_ext.extender_rx_enable();
 
   if(was_off) {
     off();
@@ -686,7 +721,7 @@ read(void *buf, unsigned short bufsize)
   uint8_t i;
   uint8_t len;
 
-  PRINTF("RF: Read\n");
+  PRINTF_RX("RF: Read\n");
 
   if((REG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFOP) == 0) {
     return 0;
@@ -698,7 +733,7 @@ read(void *buf, unsigned short bufsize)
   /* Check for validity */
   if(len > CC2538_RF_MAX_PACKET_LEN) {
     /* Oops, we must be out of sync. */
-    PRINTF("RF: bad sync\n");
+    PRINTF_RX("RF: bad sync\n");
 
     RIMESTATS_ADD(badsynch);
     CC2538_RF_CSP_ISFLUSHRX();
@@ -706,7 +741,7 @@ read(void *buf, unsigned short bufsize)
   }
 
   if(len <= CC2538_RF_MIN_PACKET_LEN) {
-    PRINTF("RF: too short\n");
+    PRINTF_RX("RF: too short\n");
 
     RIMESTATS_ADD(tooshort);
     CC2538_RF_CSP_ISFLUSHRX();
@@ -714,7 +749,7 @@ read(void *buf, unsigned short bufsize)
   }
 
   if(len - CHECKSUM_LEN > bufsize) {
-    PRINTF("RF: too long\n");
+    PRINTF_RX("RF: too long\n");
 
     RIMESTATS_ADD(toolong);
     CC2538_RF_CSP_ISFLUSHRX();
@@ -722,12 +757,12 @@ read(void *buf, unsigned short bufsize)
   }
 
   /* If we reach here, chances are the FIFO is holding a valid frame */
-  PRINTF("RF: read (0x%02x bytes) = ", len);
+  PRINTF_RX("RF: read (0x%02x bytes) = ", len);
   len -= CHECKSUM_LEN;
 
   /* Don't bother with uDMA for short frames (e.g. ACKs) */
   if(CC2538_RF_CONF_RX_USE_DMA && len > UDMA_RX_SIZE_THRESHOLD) {
-    PRINTF("<uDMA payload>");
+    PRINTF_RX("<uDMA payload>\r\n");
 
     /* Set the transfer destination's end address */
     udma_set_channel_dst(CC2538_RF_CONF_RX_DMA_CHAN,
@@ -748,7 +783,7 @@ read(void *buf, unsigned short bufsize)
   } else {
     for(i = 0; i < len; ++i) {
       ((unsigned char *)(buf))[i] = REG(RFCORE_SFR_RFDATA);
-      PRINTF("%02x", ((unsigned char *)(buf))[i]);
+      PRINTF_RX("%02x ", ((unsigned char *)(buf))[i]);
     }
   }
 
@@ -756,7 +791,7 @@ read(void *buf, unsigned short bufsize)
   rssi = ((int8_t)REG(RFCORE_SFR_RFDATA)) - RSSI_OFFSET;
   crc_corr = REG(RFCORE_SFR_RFDATA);
 
-  PRINTF("%02x%02x\n", (uint8_t)rssi, crc_corr);
+  PRINTF_RX("%02x %02x\r\n", (uint8_t)rssi, crc_corr);
 
   /* MS bit CRC OK/Not OK, 7 LS Bits, Correlation value */
   if(crc_corr & CRC_BIT_MASK) {
@@ -765,7 +800,7 @@ read(void *buf, unsigned short bufsize)
     RIMESTATS_ADD(llrx);
   } else {
     RIMESTATS_ADD(badcrc);
-    PRINTF("RF: Bad CRC\n");
+    PRINTF_RX("RF: Bad CRC\r\n");
     CC2538_RF_CSP_ISFLUSHRX();
     return 0;
   }
@@ -1121,6 +1156,17 @@ void
 cc2538_rf_set_promiscous_mode(char p)
 {
   set_frame_filtering(p);
+}
+
+
+
+int cc2538_rf_ext_ctrl_register(struct radio_extender_driver *ctrl)
+{
+  if(ctrl == NULL)
+    return -1;
+
+  rf_ext = *ctrl;
+  return 0;
 }
 /*---------------------------------------------------------------------------*/
 /** @} */

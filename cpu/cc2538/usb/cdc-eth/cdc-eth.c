@@ -126,6 +126,8 @@ set_packet_filter(uint16_t value,  uint16_t intf)
 {
   if(value & PACKET_TYPE_PROMISCUOUS){
     PRINTF("\r\nEnter promiscuous Mode\r\n");
+    
+    //void cc2538_rf_set_promiscous_mode(char p);
   }
 
   //notify_user(USB_CDC_ACM_LINE_CODING);
@@ -273,17 +275,6 @@ PROCESS_THREAD(usb_eth_process, ev , data)
             usb_setup_interrupt_endpoint(INTERRUPT_IN);
             init_recv_buffer();
             usb_submit_recv_buffer(DATA_OUT, &recv_buffer);
-#if 0
-            {
-            static const uint8_t foo[4] = {0x12,0x34,0x56,0x78};
-            xmit_buffer[0].next = NULL;
-            xmit_buffer[0].left = sizeof(foo);
-            xmit_buffer[0].flags = USB_BUFFER_SHORT_END;
-            xmit_buffer[0].data = &foo;
-
-            usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
-            }
-#endif
           }
           else 
           {
@@ -305,7 +296,7 @@ PROCESS_THREAD(usb_eth_process, ev , data)
       if (events & USB_EP_EVENT_NOTIFICATION)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
-        PRINTF("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
+        //PRINTF("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
         //memcpy(uip_buf, recv_data, uip_len);
 
 #if 0	
