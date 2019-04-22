@@ -22,6 +22,8 @@
  * Those values are not meant to be modified by the user
  * @{
  */
+#define SYS_CTRL_CONF_SYS_DIV        SYS_CTRL_CLOCK_CTRL_SYS_DIV_32MHZ
+
 #define CLOCK_CONF_SECOND 128
 
 /* Compiler configurations */

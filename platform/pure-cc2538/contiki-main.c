@@ -209,12 +209,8 @@ int cc2592_off(void)
   return 0;
 }
 
-
- 
-int
-main(void)
+int rf_ext_driver_register(void)
 {
-  
   struct radio_extender_driver rf_ctrl =
   {
     .extender_init = cc2592_init,
@@ -223,6 +219,14 @@ main(void)
     .extender_hgm_enable = cc2592_hgm_enable,
     .extender_off = cc2592_off
   };
+
+  return cc2538_rf_ext_ctrl_register(&rf_ctrl);
+}
+ 
+int
+main(void)
+{
+  
 
   nvic_init();
 
@@ -301,8 +305,8 @@ main(void)
   process_start(&etimer_process, NULL);
   ctimer_init();
 
+  rf_ext_driver_register();
 
-  cc2538_rf_ext_ctrl_register(&rf_ctrl);
 
   set_rf_params();
 
