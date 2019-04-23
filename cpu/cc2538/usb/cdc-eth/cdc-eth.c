@@ -190,18 +190,6 @@ static struct USBRequestHandlerHook cdc_eth_request_hook =
 
 static USBBuffer recv_buffer;
 static uint8_t recv_data[UIP_BUFSIZE];
-
-#define XPKT_MAX_LEN   UIP_BUFSIZE + 14 
-#define ETHERTYPE_6LOWPAN		0xA0ED	/* RFC 4944: Transmission of IPv6 Packets over IEEE 802.15.4 Networks */
-
-static USBBuffer xmit_buffer[3];
-static uint8_t xmit_data[XPKT_MAX_LEN] = 
-{
-  0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0xA0,0xED
-};
-static uint8_t xmit_idle = 1;
-
-
 static void
 init_recv_buffer()
 {
@@ -212,18 +200,122 @@ init_recv_buffer()
 }
 
 
+
+
+#ifdef NXP_SNIFFER_MODE
+struct nxp_sniffer_hdr {
+  uint8_t timestamp[5];
+  uint8_t sniffer_id[6];
+  uint8_t chl;
+  uint8_t lqi;
+  uint8_t len;
+
+};
+
+
+#define XPKT_MAC_LEN        14
+#define XPKT_UDPIP_LEN      (sizeof(struct uip_udpipv4_hdr))
+#define XPKT_SNIFFER_LEN    (sizeof(struct nxp_sniffer_hdr))
+#define XPKT_HEADER_LEN     (XPKT_MAC_LEN + XPKT_UDPIP_LEN + XPKT_SNIFFER_LEN)
+#define XPKT_MAX_LEN        (UIP_BUFSIZE + XPKT_HEADER_LEN ) 
+#define ETHERTYPE_6LOWPAN		0xA0ED	/* RFC 4944: Transmission of IPv6 Packets over IEEE 802.15.4 Networks */
+
+#else
+#define XPKT_HEADER_LEN     (0)
+#define XPKT_MAX_LEN        (UIP_BUFSIZE + XPKT_HEADER_LEN ) 
+#endif
+
+
+static USBBuffer xmit_buffer[3];
+static uint8_t xmit_data[XPKT_MAX_LEN] = 
+{
+  0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0x08,0x00
+};
+static uint8_t xmit_idle = 1;
+
+#ifdef NXP_SNIFFER_MODE
+struct uip_udpipv4_hdr *udpip_hdr = (void*)(xmit_data + XPKT_MAC_LEN);
+struct nxp_sniffer_hdr *sniffer_hdr = (void*)(xmit_data + XPKT_MAC_LEN + XPKT_UDPIP_LEN);
+#endif
+
+int16_t usb_xmit_buffer_init(void)
+{
+#ifdef NXP_SNIFFER_MODE
+  uint16_t tmp;
+
+  
+  /*ip init*/
+  udpip_hdr->vhl = 0x45;
+  udpip_hdr->tos = 0;
+  udpip_hdr->ttl = 0xff;
+  udpip_hdr->proto = 0x11; /*UDP*/
+  udpip_hdr->destipaddr.u8[0] = 192;
+  udpip_hdr->destipaddr.u8[1] = 168;
+  udpip_hdr->destipaddr.u8[2] = 2;
+  udpip_hdr->destipaddr.u8[3] = 100;
+
+  udpip_hdr->srcipaddr.u8[0] = 192;
+  udpip_hdr->srcipaddr.u8[1] = 168;
+  udpip_hdr->srcipaddr.u8[2] = 2;
+  udpip_hdr->srcipaddr.u8[3] = 1;
+
+
+  /*udp init*/
+  tmp = 1024;
+  udpip_hdr->destport[0] = (tmp>>8) & 0xFF;
+  udpip_hdr->destport[1] = tmp & 0xFF;
+
+  tmp = 1000;
+  udpip_hdr->srcport[0] = (tmp>>8) & 0xFF;
+  udpip_hdr->srcport[1] = tmp & 0xFF;
+
+  sniffer_hdr->sniffer_id[0] = '1';
+  sniffer_hdr->sniffer_id[1] = '2';
+  sniffer_hdr->sniffer_id[2] = '3';
+  sniffer_hdr->sniffer_id[3] = '4';
+  sniffer_hdr->sniffer_id[4] = '5';
+  sniffer_hdr->sniffer_id[5] = '\0';
+
+#endif   
+  return 0;
+}
+
+
+int16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
+{
+#ifdef NXP_SNIFFER_MODE
+  uint16_t tmp;
+
+  
+  tmp = sizeof(struct uip_udpipv4_hdr) + len;
+  udpip_hdr->len[0] = (tmp>>8) & 0xFF;
+  udpip_hdr->len[1] = tmp & 0xFF;
+
+  tmp = sizeof(struct uip_udp_hdr) + len;
+  udpip_hdr->udplen[0] = (tmp>>8) & 0xFF;
+  udpip_hdr->udplen[1] = tmp & 0xFF;
+#endif   
+  memcpy(xmit_data + XPKT_HEADER_LEN , data, len);
+
+  return 0;
+}
+
+
 int16_t
 usbeth_send(uint8_t* data,uint16_t len)
 {
   uint16_t offset = 0;
-  uint16_t total_len = len + 14;
+  uint16_t total_len = len + XPKT_HEADER_LEN;
+
+
   
   if(total_len > XPKT_MAX_LEN)
   {
     return -1;
   }
+
   
-  memcpy(xmit_data + 14 , data, len);
+  usb_xmit_buf_hdr_update(data,len);
 
   for(;offset < total_len;)
   {
@@ -264,6 +356,8 @@ PROCESS_THREAD(usb_eth_process, ev , data)
   //uip_fw_default(&usbethif);
   //uip_setethaddr(default_uip_ethaddr);
   //uip_arp_init();
+
+  usb_xmit_buffer_init();
   
   while(1) {
     PROCESS_WAIT_EVENT();

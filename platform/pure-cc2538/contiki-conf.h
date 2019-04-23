@@ -512,6 +512,7 @@ typedef uint32_t rtimer_clock_t;
 #endif
 
 #define USB_ETH_CONF_ENABLE     1
+#define NXP_SNIFFER_MODE        1
 
 #define DATA_IN 0x84
 #define DATA_OUT 0x02

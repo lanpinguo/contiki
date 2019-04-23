@@ -72,7 +72,7 @@
 #include "shell-memdebug.h"
 
 
-#define TEST  1
+#define TEST  2
 
 #if TEST == 1
 static uint8_t pkt_index = 0;
@@ -83,6 +83,16 @@ static uint8_t test_data[UIP_BUFSIZE] = {
   0xfa,0xf0,0x9e,0xd3,0x00,0x00,0x02,0x04,0x05,0xb4,0x01,0x03,0x03,0x08,0x01,0x01,
   0x04,0x02
 };
+
+#elif TEST == 2
+static uint8_t pkt_index = 0;
+static uint8_t test_data[UIP_BUFSIZE] = {
+  0x41, 0xd8, 0xf9, 0x34, 0x12, 0xff, 0xff, 0xf1, 0xfd, 0x05, 0x10, 0x00, 0x4b, 0x12, 0x00, 0x7a,
+  0x3b, 0x3a, 0x1a, 0x9b, 0x00, 0x0c, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+
+
 #endif
 /*---------------------------------------------------------------------------*/
 PROCESS(shell_debug_process, "pure");
@@ -102,6 +112,10 @@ PROCESS_THREAD(shell_debug_process, ev, data)
   pkt_index++;
   test_data[0] = pkt_index;
   usbeth_send(test_data,66);
+  printf("\r\nusbeth_send: %d\r\n", pkt_index);
+#elif TEST == 2
+  pkt_index++;
+  usbeth_send(test_data,64);
   printf("\r\nusbeth_send: %d\r\n", pkt_index);
 #endif
 
