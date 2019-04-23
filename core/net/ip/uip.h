@@ -1667,6 +1667,26 @@ struct uip_icmpip_hdr {
 #endif /* !NETSTACK_CONF_WITH_IPV6 */
 };
 
+/* The UDP and IPv4 headers. */
+struct uip_udpipv4_hdr {
+  /* IP header. */
+  uint8_t vhl,
+    tos,
+    len[2],
+    ipid[2],
+    ipoffset[2],
+    ttl,
+    proto;
+  uint16_t ipchksum;
+  uip_ip4addr_t srcipaddr;
+  uip_ip4addr_t destipaddr;
+
+  /* UDP header. */
+  uint8_t srcport[2];
+  uint8_t destport[2];
+  uint8_t udplen[2];
+  uint8_t udpchksum[2];
+};
 
 /* The UDP and IP headers. */
 struct uip_udpip_hdr {
