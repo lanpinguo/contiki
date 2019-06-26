@@ -6,7 +6,12 @@
 //#include <uip_arp.h>
 #include <stdio.h>
 #include <string.h>
-//#include <net/ipv4/uip-fw.h>
+
+
+#include "packetbuf.h"
+#include "net/netstack.h"
+
+
 
 #define DEBUG 1
 #ifdef DEBUG
@@ -202,7 +207,7 @@ init_recv_buffer()
 
 
 
-#ifdef NXP_SNIFFER_MODE
+#if NXP_SNIFFER_MODE
 struct nxp_sniffer_hdr {
   uint8_t timestamp[5];
   uint8_t sniffer_id[6];
@@ -221,26 +226,35 @@ struct nxp_sniffer_hdr {
 #define ETHERTYPE_6LOWPAN		0xA0ED	/* RFC 4944: Transmission of IPv6 Packets over IEEE 802.15.4 Networks */
 
 #else
-#define XPKT_HEADER_LEN     (0)
+#define XPKT_HEADER_LEN     (14)
 #define XPKT_MAX_LEN        (UIP_BUFSIZE + XPKT_HEADER_LEN ) 
 #endif
 
 
 static USBBuffer xmit_buffer[3];
+static uint8_t xmit_idle = 1;
+
+#if NXP_SNIFFER_MODE
+
 static uint8_t xmit_data[XPKT_MAX_LEN] = 
 {
   0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0x08,0x00
 };
-static uint8_t xmit_idle = 1;
+#else
+static uint8_t xmit_data[XPKT_MAX_LEN] = 
+{
+  0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0xA0,0xED
+};
+#endif
 
-#ifdef NXP_SNIFFER_MODE
+#if NXP_SNIFFER_MODE
 struct uip_udpipv4_hdr *udpip_hdr = (void*)(xmit_data + XPKT_MAC_LEN);
 struct nxp_sniffer_hdr *sniffer_hdr = (void*)(xmit_data + XPKT_MAC_LEN + XPKT_UDPIP_LEN);
 #endif
 
 int16_t usb_xmit_buffer_init(void)
 {
-#ifdef NXP_SNIFFER_MODE
+#if NXP_SNIFFER_MODE
   uint16_t tmp;
 
   
@@ -281,12 +295,19 @@ int16_t usb_xmit_buffer_init(void)
 }
 
 
-int16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
+uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
 {
-#ifdef NXP_SNIFFER_MODE
+#if NXP_SNIFFER_MODE
   uint16_t tmp;
+  radio_value_t  chl;
 
-  
+  sniffer_hdr->lqi = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
+  sniffer_hdr->timestamp[3] = (packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP) >> 8) & 0xFF;
+  sniffer_hdr->timestamp[4] = packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP) & 0xFF;
+  NETSTACK_RADIO.get_value(RADIO_PARAM_CHANNEL,&chl);
+  sniffer_hdr->chl = chl;
+  /*packetbuf_attr(PACKETBUF_ATTR_CHANNEL);*/
+  sniffer_hdr->len = packetbuf_datalen();
   tmp = sizeof(struct uip_udpipv4_hdr) + len;
   udpip_hdr->len[0] = (tmp>>8) & 0xFF;
   udpip_hdr->len[1] = tmp & 0xFF;
@@ -294,10 +315,15 @@ int16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
   tmp = sizeof(struct uip_udp_hdr) + len;
   udpip_hdr->udplen[0] = (tmp>>8) & 0xFF;
   udpip_hdr->udplen[1] = tmp & 0xFF;
-#endif   
   memcpy(xmit_data + XPKT_HEADER_LEN , data, len);
 
-  return 0;
+  return len + XPKT_HEADER_LEN;
+#else
+
+  memcpy(xmit_data + XPKT_HEADER_LEN , packetbuf_dataptr(), packetbuf_datalen());
+  return packetbuf_datalen() + XPKT_HEADER_LEN;
+#endif   
+
 }
 
 
@@ -305,17 +331,21 @@ int16_t
 usbeth_send(uint8_t* data,uint16_t len)
 {
   uint16_t offset = 0;
-  uint16_t total_len = len + XPKT_HEADER_LEN;
+  uint16_t total_len ;
 
 
+  
+  if(!(xmit_idle > 0)){
+    return -1;
+  }
+
+  
+  total_len = usb_xmit_buf_hdr_update(data,len);
   
   if(total_len > XPKT_MAX_LEN)
   {
     return -1;
   }
-
-  
-  usb_xmit_buf_hdr_update(data,len);
 
   for(;offset < total_len;)
   {
