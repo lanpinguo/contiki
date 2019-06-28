@@ -77,7 +77,7 @@ USB_CORE_SOURCEFILES += usb-core.c cdc-acm.c
 
 ifdef USB_CDC_ETH_CLASS
 USB_ARCH_SOURCEFILES += usb-arch.c cdc-eth.c cdc-eth-descriptors.c \
-                        cdc-eth-string-descriptors.c 
+                        cdc-eth-string-descriptors.c crc32.c
 else
 USB_ARCH_SOURCEFILES += usb-arch.c usb-serial.c cdc-acm-descriptors.c
 endif

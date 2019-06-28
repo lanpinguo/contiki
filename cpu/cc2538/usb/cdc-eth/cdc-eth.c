@@ -5,13 +5,13 @@
 
 //#include <uip_arp.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <string.h>
 
 
 #include "packetbuf.h"
 #include "net/netstack.h"
-
-
+#include "crc32.h"
 
 #define DEBUG 1
 #ifdef DEBUG
@@ -219,6 +219,7 @@ struct nxp_sniffer_hdr {
 
 
 #define XPKT_MAC_LEN        14
+#define XPKT_ETH_FCS_LEN    4
 #define XPKT_UDPIP_LEN      (sizeof(struct uip_udpipv4_hdr))
 #define XPKT_SNIFFER_LEN    (sizeof(struct nxp_sniffer_hdr))
 #define XPKT_HEADER_LEN     (XPKT_MAC_LEN + XPKT_UDPIP_LEN + XPKT_SNIFFER_LEN)
@@ -300,30 +301,61 @@ uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
 #if NXP_SNIFFER_MODE
   uint16_t tmp;
   radio_value_t  chl;
-
+  uint32_t *fcs;
+  
   sniffer_hdr->lqi = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
   sniffer_hdr->timestamp[3] = (packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP) >> 8) & 0xFF;
   sniffer_hdr->timestamp[4] = packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP) & 0xFF;
   NETSTACK_RADIO.get_value(RADIO_PARAM_CHANNEL,&chl);
   sniffer_hdr->chl = chl;
   /*packetbuf_attr(PACKETBUF_ATTR_CHANNEL);*/
-  sniffer_hdr->len = packetbuf_datalen();
-  tmp = sizeof(struct uip_udpipv4_hdr) + len;
+  sniffer_hdr->len = packetbuf_totlen();
+  tmp = sizeof(struct uip_udpipv4_hdr) + sizeof(struct nxp_sniffer_hdr) +len;
   udpip_hdr->len[0] = (tmp>>8) & 0xFF;
   udpip_hdr->len[1] = tmp & 0xFF;
 
-  tmp = sizeof(struct uip_udp_hdr) + len;
+  tmp = sizeof(struct uip_udp_hdr) + sizeof(struct nxp_sniffer_hdr) +len;
   udpip_hdr->udplen[0] = (tmp>>8) & 0xFF;
   udpip_hdr->udplen[1] = tmp & 0xFF;
   memcpy(xmit_data + XPKT_HEADER_LEN , data, len);
 
-  return len + XPKT_HEADER_LEN;
+  /* update fcs */
+  fcs = xmit_data + len + XPKT_HEADER_LEN;
+  *fcs = crc32_data(xmit_data, len + XPKT_HEADER_LEN , 0xFFFFFFFF);
+
+  return len + XPKT_HEADER_LEN  + XPKT_ETH_FCS_LEN;
+
+  
 #else
 
   memcpy(xmit_data + XPKT_HEADER_LEN , packetbuf_dataptr(), packetbuf_datalen());
-  return packetbuf_datalen() + XPKT_HEADER_LEN;
+  return packetbuf_datalen() + XPKT_HEADER_LEN + XPKT_ETH_FCS_LEN;
 #endif   
 
+}
+
+void dump_buf(uint8_t *_p, int len)
+{
+	char buf[128];
+	int i, j, i0;
+	const unsigned char *p = (const unsigned char *)_p;
+
+	printf("\r\n");
+	/* hexdump routine */
+	for (i = 0; i < len; ) {
+		memset(buf, sizeof(buf), ' ');
+		sprintf(buf, "%5d: ", i);
+		i0 = i;
+		for (j=0; j < 16 && i < len; i++, j++)
+			sprintf(buf+7+j*3, "%02x ", (uint8_t)(p[i]));
+		i = i0;
+		for (j=0; j < 16 && i < len; i++, j++)
+			sprintf(buf+7+j + 48, "%c",
+				isprint(p[i]) ? p[i] : '.');
+		printf("%s\n", buf);
+	}
+	
+	printf("\r\n");
 }
 
 
@@ -341,6 +373,10 @@ usbeth_send(uint8_t* data,uint16_t len)
 
   
   total_len = usb_xmit_buf_hdr_update(data,len);
+
+  /* for debug only */
+  dump_buf(xmit_data,total_len);
+
   
   if(total_len > XPKT_MAX_LEN)
   {
