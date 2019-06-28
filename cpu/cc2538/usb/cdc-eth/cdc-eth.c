@@ -12,6 +12,8 @@
 #include "packetbuf.h"
 #include "net/netstack.h"
 #include "crc32.h"
+#include "crc16.h"
+
 
 #define DEBUG 1
 #ifdef DEBUG
@@ -302,6 +304,7 @@ uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
   uint16_t tmp;
   radio_value_t  chl;
   uint32_t *fcs;
+  uint32_t *fcs16;
   
   sniffer_hdr->lqi = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
   sniffer_hdr->timestamp[3] = (packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP) >> 8) & 0xFF;
@@ -318,6 +321,12 @@ uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
   udpip_hdr->udplen[0] = (tmp>>8) & 0xFF;
   udpip_hdr->udplen[1] = tmp & 0xFF;
   memcpy(xmit_data + XPKT_HEADER_LEN , data, len);
+
+  
+  /* update 802.15.4 fcs */
+  fcs16 = xmit_data + XPKT_HEADER_LEN + len  - 2;
+  *fcs16 = crc16_data(xmit_data + XPKT_HEADER_LEN, len - 2 , 0);
+
 
   /* update fcs */
   fcs = xmit_data + len + XPKT_HEADER_LEN;
