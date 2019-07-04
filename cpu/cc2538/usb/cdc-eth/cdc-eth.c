@@ -31,6 +31,21 @@ struct uip_eth_hdr {
   uint16_t type;
 };
 
+struct uip_ipv4_hdr {
+  /* IP header. */
+  uint8_t vhl,
+    tos,
+    len[2],
+    ipid[2],
+    ipoffset[2],
+    ttl,
+    proto;
+  uint16_t ipchksum;
+  uip_ip4addr_t srcipaddr, destipaddr;
+};
+
+
+
 #define UIP_ETHTYPE_ARP  0x0806
 #define UIP_ETHTYPE_IP   0x0800
 #define UIP_ETHTYPE_IPV6 0x86dd
@@ -241,12 +256,12 @@ static uint8_t xmit_idle = 1;
 
 static uint8_t xmit_data[XPKT_MAX_LEN] = 
 {
-  0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0x08,0x00
+  0x02,0x00,0x00,0x00,0x00,0x12,0x98,0x54,0x1b,0xa2,0x87,0xd0,0x08,0x00
 };
 #else
 static uint8_t xmit_data[XPKT_MAX_LEN] = 
 {
-  0x14,0x75,0x90,0x73,0x55,0xb4,0x98,0x54,0x1b,0xa2,0x87,0xd0,0xA0,0xED
+  0x02,0x00,0x00,0x00,0x00,0x12,0x98,0x54,0x1b,0xa2,0x87,0xd0,0xA0,0xED
 };
 #endif
 
@@ -268,13 +283,13 @@ int16_t usb_xmit_buffer_init(void)
   udpip_hdr->proto = 0x11; /*UDP*/
   udpip_hdr->destipaddr.u8[0] = 192;
   udpip_hdr->destipaddr.u8[1] = 168;
-  udpip_hdr->destipaddr.u8[2] = 2;
+  udpip_hdr->destipaddr.u8[2] = 3;
   udpip_hdr->destipaddr.u8[3] = 100;
 
   udpip_hdr->srcipaddr.u8[0] = 192;
   udpip_hdr->srcipaddr.u8[1] = 168;
-  udpip_hdr->srcipaddr.u8[2] = 2;
-  udpip_hdr->srcipaddr.u8[3] = 1;
+  udpip_hdr->srcipaddr.u8[2] = 3;
+  udpip_hdr->srcipaddr.u8[3] = 200;
 
 
   /*udp init*/
@@ -297,6 +312,63 @@ int16_t usb_xmit_buffer_init(void)
   return 0;
 }
 
+ static uint16_t
+chksum(uint16_t sum, const uint8_t *data, uint16_t len)
+{
+  uint16_t t;
+  const uint8_t *dataptr;
+  const uint8_t *last_byte;
+
+  dataptr = data;
+  last_byte = data + len - 1;
+
+  while(dataptr < last_byte) {   /* At least two more bytes */
+    t = (dataptr[0] << 8) + dataptr[1];
+    sum += t;
+    if(sum < t) {
+      sum++;      /* carry */
+    }
+    dataptr += 2;
+  }
+
+  if(dataptr == last_byte) {
+    t = (dataptr[0] << 8) + 0;
+    sum += t;
+    if(sum < t) {
+      sum++;      /* carry */
+    }
+  }
+
+  /* Return sum in host byte order. */
+  return sum;
+}
+
+uint16_t ip_hdr_chksum(uint8_t *ip_buf, uint16_t len)
+{
+	return 	 uip_htons(chksum(0, ip_buf, len));
+}
+
+
+uint16_t udp_hdr_chksum(uint8_t *ip_buf, uint16_t udp_len)
+{
+	uint16_t sum;
+	struct uip_ipv4_hdr *pIpHdr = (struct uip_ipv4_hdr *)ip_buf;
+
+	/* First sum pseudoheader. */
+
+	/* IP protocol and length fields. This addition cannot carry. */
+	sum = udp_len + 17;
+	/* Sum IP source and destination addresses. */
+	sum = chksum(sum, (uint8_t *)&pIpHdr->srcipaddr, 2 * sizeof(uip_ip4addr_t));
+
+	/* Sum UDP header and data. */
+	sum = chksum(sum, &ip_buf[sizeof(struct uip_ipv4_hdr)],udp_len);
+
+	return (sum == 0) ? 0xffff : sum;
+
+}
+
+
 
 uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
 {
@@ -304,7 +376,7 @@ uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
   uint16_t tmp;
   radio_value_t  chl;
   uint32_t *fcs;
-  uint32_t *fcs16;
+  uint16_t *fcs16;
   
   sniffer_hdr->lqi = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
   sniffer_hdr->timestamp[3] = (packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP) >> 8) & 0xFF;
@@ -317,19 +389,31 @@ uint16_t usb_xmit_buf_hdr_update(uint8_t* data,uint16_t len)
   udpip_hdr->len[0] = (tmp>>8) & 0xFF;
   udpip_hdr->len[1] = tmp & 0xFF;
 
+  udpip_hdr->ipchksum = 0;
+  tmp = ~(ip_hdr_chksum(xmit_data + XPKT_MAC_LEN,sizeof(struct uip_ipv4_hdr)));
+  udpip_hdr->ipchksum = tmp;
+
+
   tmp = sizeof(struct uip_udp_hdr) + sizeof(struct nxp_sniffer_hdr) +len;
   udpip_hdr->udplen[0] = (tmp>>8) & 0xFF;
   udpip_hdr->udplen[1] = tmp & 0xFF;
+
+  udpip_hdr->udpchksum[0] = 0;
+  udpip_hdr->udpchksum[1] = 0;
+  tmp = ~(udp_hdr_chksum(xmit_data + XPKT_MAC_LEN,tmp));
+  udpip_hdr->udpchksum[0] = (tmp>>8) & 0xFF;
+  udpip_hdr->udpchksum[1] = tmp & 0xFF;
+
   memcpy(xmit_data + XPKT_HEADER_LEN , data, len);
 
   
   /* update 802.15.4 fcs */
-  fcs16 = xmit_data + XPKT_HEADER_LEN + len  - 2;
+  fcs16 = (uint16_t *)(xmit_data + XPKT_HEADER_LEN + len  - 2);
   *fcs16 = crc16_data(xmit_data + XPKT_HEADER_LEN, len - 2 , 0);
 
 
   /* update fcs */
-  fcs = xmit_data + len + XPKT_HEADER_LEN;
+  fcs = (uint32_t *)(xmit_data + len + XPKT_HEADER_LEN);
   *fcs = crc32_data(xmit_data, len + XPKT_HEADER_LEN , 0xFFFFFFFF);
 
   return len + XPKT_HEADER_LEN  + XPKT_ETH_FCS_LEN;
@@ -367,6 +451,57 @@ void dump_buf(uint8_t *_p, int len)
 	printf("\r\n");
 }
 
+
+
+int16_t
+usbeth_l2_send(uint8_t *pkt, uint16_t len)
+{
+  uint16_t offset = 0;
+  uint16_t total_len = len + 4; /* add fcs field*/
+  uint32_t *fcs;
+
+
+  
+  if(!(xmit_idle > 0)){
+    return -1;
+  }
+
+  /* update fcs */
+  fcs = (uint32_t *)(pkt + len);
+  *fcs = crc32_data(pkt, len, 0xFFFFFFFF);
+  
+  memcpy(xmit_data , pkt, total_len);
+
+  /* for debug only */
+  dump_buf(xmit_data,total_len);
+
+  
+  if(total_len > XPKT_MAX_LEN)
+  {
+    return -1;
+  }
+
+  for(;offset < total_len;)
+  {
+    xmit_buffer[0].next = NULL;
+    xmit_buffer[0].data = xmit_data + offset;
+    if((total_len - offset) > DATA_IN_PKT_SIZE_MAX){
+      xmit_buffer[0].left = DATA_IN_PKT_SIZE_MAX;
+      xmit_buffer[0].flags = USB_BUFFER_IN ;
+      offset += DATA_IN_PKT_SIZE_MAX;
+    }
+    else
+    {
+      /* the last segment*/
+      xmit_buffer[0].left = total_len - offset;
+      xmit_buffer[0].flags = USB_BUFFER_NOTIFY | USB_BUFFER_PACKET_END; ;
+      offset = total_len;
+    }
+    /* printf("usbeth_send: %d\n", uip_len);  */
+    usb_submit_xmit_buffer(DATA_IN, &xmit_buffer[0]);
+  }
+  return len;
+}
 
 int16_t
 usbeth_send(uint8_t* data,uint16_t len)
@@ -473,17 +608,17 @@ PROCESS_THREAD(usb_eth_process, ev , data)
       if (events & USB_EP_EVENT_NOTIFICATION)
       {
         uip_len = sizeof(recv_data) - recv_buffer.left;
-        //PRINTF("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle);  
+        //PRINTF("\r\nReceived: %d bytes xmit:%d\n", uip_len,xmit_idle); 
+        
+        //dump_buf(recv_data, uip_len);
         //memcpy(uip_buf, recv_data, uip_len);
 
-#if 0	
-#if NETSTACK_CONF_WITH_IPV6
+#if 0
         if(BUF->type == uip_htons(UIP_ETHTYPE_IPV6)) {
         uip_neighbor_add(&IPBUF->srcipaddr, &BUF->src);
         tcpip_input();
         } else 
 #endif /* NETSTACK_CONF_WITH_IPV6 */
-#endif
 #if 0
         if(loopback)
         {
