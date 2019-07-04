@@ -123,25 +123,42 @@ set_rime_addr(void)
 
   printf("Rime started with address ");
   for(i = 0; i < sizeof(linkaddr_t) - 1; i++) {
-    printf("%d.", linkaddr_node_addr.u8[i]);
+    printf("%02x.", linkaddr_node_addr.u8[i]);
   }
-  printf("%d\n", linkaddr_node_addr.u8[i]);
+  printf("%02x\r\n", linkaddr_node_addr.u8[i]);
 }
 /*---------------------------------------------------------------------------*/
 int
 main(void)
 {
-  
+	/*D1 --> PA.06, D2 --> PB.05, D3 --> PB.06*/
+  GPIO_PACFGH &= 0xF0FF;
+  GPIO_PACFGH |= 0x0100;
+	GPIO_PAOUT = 0x00;  /* Low active */
+
+  GPIO_PBCFGH &= 0xF00F;
+  GPIO_PBCFGH |= 0x0110;
+	GPIO_PBOUT = 0x00;  /* Low active */
+
+
+	
   /*
    * Initalize hardware.
    */
   halInit();
+
   clock_init();
-  
+
   uart1_init(115200);
   
   /* Led initialization */
   leds_init();
+
+  GPIO_PBCFGH &= 0xF00F;
+  GPIO_PBCFGH |= 0x0110;
+
+	GPIO_PBOUT = 0x50;  
+
     
   INTERRUPTS_ON(); 
 
@@ -173,14 +190,14 @@ main(void)
 
   set_rime_addr();
 
-  printf("%s %s, channel check rate %d Hz\n",
+  printf("%s %s, channel check rate %d Hz\r\n",
          NETSTACK_MAC.name, NETSTACK_RDC.name,
          CLOCK_SECOND / (NETSTACK_RDC.channel_check_interval() == 0 ? 1:
                                   NETSTACK_RDC.channel_check_interval()));
   printf("802.15.4 PAN ID 0x%x, EUI-%d:",
       IEEE802154_CONF_PANID, UIP_CONF_LL_802154?64:16);
   net_debug_lladdr_print((const uip_lladdr_t *)&linkaddr_node_addr);
-  printf(", radio channel %u\n", RF_CHANNEL);
+  printf(", radio channel %u\r\n", RF_CHANNEL);
 
   procinit_init();
 
@@ -198,7 +215,7 @@ main(void)
   
   autostart_start(autostart_processes);
 #if NETSTACK_CONF_WITH_IPV6
-  printf("Tentative link-local IPv6 address ");
+  printf("Tentative link-local IPv6 address \r\n");
   {
     uip_ds6_addr_t *lladdr;
     int i;
@@ -240,6 +257,7 @@ main(void)
     } while(r > 0);
     
     
+		printf("watchdog_periodic: %u\r\n", r);
     
     /* watchdog_stop(); */    
     ENERGEST_SWITCH(ENERGEST_TYPE_CPU, ENERGEST_TYPE_LPM);

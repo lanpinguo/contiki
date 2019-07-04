@@ -34,6 +34,15 @@
 
 #include "lib/ringbuf.h"
 
+#define DEBUG 0
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
+
 #ifdef SERIAL_LINE_CONF_BUFSIZE
 #define BUFSIZE SERIAL_LINE_CONF_BUFSIZE
 #else /* SERIAL_LINE_CONF_BUFSIZE */
@@ -45,8 +54,8 @@
 #error Change SERIAL_LINE_CONF_BUFSIZE in contiki-conf.h.
 #endif
 
-#define IGNORE_CHAR(c) (c == 0x0d)
-#define END 0x0a
+#define IGNORE_CHAR(c) (c == 0x0a)
+#define END 0x0d
 
 static struct ringbuf rxbuf;
 static uint8_t rxbuf_data[BUFSIZE];
@@ -60,6 +69,8 @@ int
 serial_line_input_byte(unsigned char c)
 {
   static uint8_t overflow = 0; /* Buffer overflow: ignore until END */
+
+	PRINTF("(%02x)",c);
   
   if(IGNORE_CHAR(c)) {
     return 0;
@@ -78,7 +89,7 @@ serial_line_input_byte(unsigned char c)
       overflow = 0;
     }
   }
-
+	PRINTF("[%c]",c);
   /* Wake up consumer process */
   process_poll(&serial_line_process);
   return 1;
@@ -97,7 +108,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
   while(1) {
     /* Fill application buffer until newline or empty */
     int c = ringbuf_get(&rxbuf);
-    
+    PRINTF("<%c>",c);
     if(c == -1) {
       /* Buffer empty, wait for poll */
       PROCESS_YIELD();
@@ -111,7 +122,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
       } else {
         /* Terminate */
         buf[ptr++] = (uint8_t)'\0';
-
+				PRINTF("\r\n%s",buf);
         /* Broadcast event */
         process_post(PROCESS_BROADCAST, serial_line_event_message, buf);
 

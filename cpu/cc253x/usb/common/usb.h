@@ -48,11 +48,24 @@ typedef uint32_t Uint32;
 
 /*_____ D E S C R I P T O R    T Y P E S ____________________________________*/
 
-#define DEVICE                0x01
-#define CONFIGURATION         0x02
-#define STRING                0x03
-#define INTERFACE             0x04
-#define ENDPOINT              0x05
+#define USB_DT_DEVICE                   0x01
+#define USB_DT_CONFIGURATION            0x02
+#define USB_DT_STRING                   0x03
+#define USB_DT_INTERFACE                0x04
+#define USB_DT_ENDPOINT                 0x05
+#define USB_DT_DEVICE_QUALIFIER		      0x06
+#define USB_DT_OTHER_SPEED_CONFIG	      0x07
+#define USB_DT_INTERFACE_POWER		      0x08
+/* these are from a minor usb 2.0 revision (ECN) */
+#define USB_DT_OTG			                0x09
+#define USB_DT_DEBUG			              0x0a
+#define USB_DT_INTERFACE_ASSOCIATION	  0x0b
+/* these are from the Wireless USB spec */
+#define USB_DT_SECURITY			            0x0c
+#define USB_DT_KEY			                0x0d
+#define USB_DT_ENCRYPTION_TYPE		      0x0e
+#define USB_DT_BOS			                0x0f
+#define USB_DT_DEVICE_CAPABILITY	      0x10
 
 /* HID specific */
 #define HID                   0x21
@@ -181,5 +194,97 @@ struct usb_st_language_descriptor
   Uchar  bDescriptorType;       /* STRING descriptor type */
   Uint16 wlangid[1];               /* language id */
 } BYTE_ALIGNED;
+
+
+/*-------------------------------------------------------------------------*/
+
+/* USB_DT_BOS:  group of device-level capabilities */
+struct usb_st_bos_descriptor {
+	Uchar  bLength;
+	Uchar  bDescriptorType;
+
+	Uint16 wTotalLength;
+	Uchar  bNumDeviceCaps;
+} __attribute__((packed));
+
+#define USB_DT_BOS_SIZE		5
+/*-------------------------------------------------------------------------*/
+
+/* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
+struct usb_st_dev_cap_header {
+	Uchar  bLength;
+	Uchar  bDescriptorType;
+	Uchar  bDevCapabilityType;
+} __attribute__((packed));
+
+#define	USB_CAP_TYPE_WIRELESS_USB	1
+
+struct usb_st_wireless_cap_descriptor {	/* Ultra Wide Band */
+	Uchar  bLength;
+	Uchar  bDescriptorType;
+	Uchar  bDevCapabilityType;
+
+	Uchar  bmAttributes;
+#define	USB_WIRELESS_P2P_DRD		(1 << 1)
+#define	USB_WIRELESS_BEACON_MASK	(3 << 2)
+#define	USB_WIRELESS_BEACON_SELF	(1 << 2)
+#define	USB_WIRELESS_BEACON_DIRECTED	(2 << 2)
+#define	USB_WIRELESS_BEACON_NONE	(3 << 2)
+	Uint16 wPHYRates;	/* bit rates, Mbps */
+#define	USB_WIRELESS_PHY_53		(1 << 0)	/* always set */
+#define	USB_WIRELESS_PHY_80		(1 << 1)
+#define	USB_WIRELESS_PHY_107		(1 << 2)	/* always set */
+#define	USB_WIRELESS_PHY_160		(1 << 3)
+#define	USB_WIRELESS_PHY_200		(1 << 4)	/* always set */
+#define	USB_WIRELESS_PHY_320		(1 << 5)
+#define	USB_WIRELESS_PHY_400		(1 << 6)
+#define	USB_WIRELESS_PHY_480		(1 << 7)
+	Uchar  bmTFITXPowerInfo;	/* TFI power levels */
+	Uchar  bmFFITXPowerInfo;	/* FFI power levels */
+	Uint16 bmBandGroup;
+	Uchar  bReserved;
+} __attribute__((packed));
+
+/* USB 2.0 Extension descriptor */
+#define	USB_CAP_TYPE_EXT		2
+
+struct usb_st_ext_cap_descriptor {		/* Link Power Management */
+	Uchar  bLength;
+	Uchar  bDescriptorType;
+	Uchar  bDevCapabilityType;
+	Uint32 bmAttributes;
+#define USB_LPM_SUPPORT			(1 << 1)	/* supports LPM */
+#define USB_BESL_SUPPORT		(1 << 2)	/* supports BESL */
+#define USB_BESL_BASELINE_VALID		(1 << 3)	/* Baseline BESL valid*/
+#define USB_BESL_DEEP_VALID		(1 << 4)	/* Deep BESL valid */
+#define USB_GET_BESL_BASELINE(p)	(((p) & (0xf << 8)) >> 8)
+#define USB_GET_BESL_DEEP(p)		(((p) & (0xf << 12)) >> 12)
+} __attribute__((packed));
+
+#define USB_DT_USB_EXT_CAP_SIZE	7
+
+/*
+ * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
+ * specific device level capabilities
+ */
+#define		USB_SS_CAP_TYPE		3
+struct usb_st_ss_cap_descriptor {		/* Link Power Management */
+	Uchar  bLength;
+	Uchar  bDescriptorType;
+	Uchar  bDevCapabilityType;
+	Uchar  bmAttributes;
+#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
+	Uint16 wSpeedSupported;
+#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
+#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
+#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
+#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
+	Uchar  bFunctionalitySupport;
+	Uchar  bU1devExitLat;
+	Uint16 bU2DevExitLat;
+} __attribute__((packed));
+
+
+
 
 #endif /* USB_H_6PFTDPIMZM__ */

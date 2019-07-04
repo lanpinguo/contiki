@@ -42,13 +42,17 @@ endif
 CLEAN += symbols.c symbols.h *.d *.elf *.hex
 
 ### CPU-dependent directories
-CONTIKI_CPU_DIRS = ../arm/common/CMSIS . dev usb
-
+CONTIKI_CPU_DIRS = ../arm/common/CMSIS . dev usb 
+ifdef USB_CDC_ETH_CLASS
+CONTIKI_CPU_DIRS += usb/cdc-eth
+endif
 ### Use the existing debug I/O in cpu/arm/common
 CONTIKI_CPU_DIRS += ../arm/common/dbg-io
 
 ### Use usb core from cpu/cc253x/usb/common
 CONTIKI_CPU_DIRS += ../cc253x/usb/common ../cc253x/usb/common/cdc-acm
+
+
 
 ### CPU-dependent source files
 CONTIKI_CPU_SOURCEFILES += soc.c clock.c rtimer-arch.c uart.c watchdog.c
@@ -63,11 +67,20 @@ CONTIKI_CPU_SOURCEFILES += dbg.c ieee-addr.c
 CONTIKI_CPU_SOURCEFILES += slip-arch.c slip.c
 CONTIKI_CPU_SOURCEFILES += i2c.c cc2538-temp-sensor.c vdd3-sensor.c
 CONTIKI_CPU_SOURCEFILES += cfs-coffee.c cfs-coffee-arch.c pwm.c
+ifneq ($(FLASH_OTA_BOOT_MANAGER),0)
+CONTIKI_CPU_SOURCEFILES += bootloader.c
+endif
 
 DEBUG_IO_SOURCEFILES += dbg-printf.c dbg-snprintf.c dbg-sprintf.c strformat.c
 
 USB_CORE_SOURCEFILES += usb-core.c cdc-acm.c
+
+ifdef USB_CDC_ETH_CLASS
+USB_ARCH_SOURCEFILES += usb-arch.c cdc-eth.c cdc-eth-descriptors.c \
+                        cdc-eth-string-descriptors.c crc32.c
+else
 USB_ARCH_SOURCEFILES += usb-arch.c usb-serial.c cdc-acm-descriptors.c
+endif
 
 ifneq ($(TARGET_START_SOURCEFILES),)
   CPU_START_SOURCEFILES = TARGET_START_SOURCEFILES

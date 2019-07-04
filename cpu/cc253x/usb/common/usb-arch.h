@@ -7,7 +7,7 @@
 
 /* Includes control endpoint 0 */
 #ifndef USB_MAX_ENDPOINTS
-#define USB_MAX_ENDPOINTS 4
+#define USB_MAX_ENDPOINTS 6
 #endif
 
 #ifndef CTRL_EP_SIZE
@@ -15,13 +15,13 @@
 #endif
 
 #ifndef USB_EP1_SIZE
-#define USB_EP1_SIZE 8
+#define USB_EP1_SIZE 0
 #endif
 #ifndef USB_EP2_SIZE
-#define USB_EP2_SIZE 8
+#define USB_EP2_SIZE 0
 #endif
 #ifndef USB_EP3_SIZE
-#define USB_EP3_SIZE 8
+#define USB_EP3_SIZE 0
 #endif
 #ifndef USB_EP4_SIZE
 #define USB_EP4_SIZE 0

@@ -129,6 +129,32 @@
   REG(RFCORE_SFR_RFST) = CC2538_RF_CSP_OP_ISFLUSHTX; \
   REG(RFCORE_SFR_RFST) = CC2538_RF_CSP_OP_ISFLUSHTX; \
 } while(0)
+
+
+
+/**
+ * The structure of a device driver for a board with PA chip.
+ */
+struct radio_extender_driver {
+
+  int (* extender_init)(void);
+
+
+  /** Enable Rx. */
+  int (* extender_rx_enable)(void);
+
+  /** Enable Tx. */
+  int (* extender_tx_enable)(void);
+
+  /** Turn the radio on. */
+  int (* extender_hgm_enable)(void);
+
+  /** Turn the extender off. */
+  int (* extender_off)(void);
+};
+
+
+
 /*---------------------------------------------------------------------------*/
 /** The NETSTACK data structure for the cc2538 RF driver */
 extern const struct radio_driver cc2538_rf_driver;
@@ -154,6 +180,12 @@ void cc2538_rf_set_addr(uint16_t pan);
  * address as the receive address are returned from the RF core.
  */
 void cc2538_rf_set_promiscous_mode(char p);
+
+
+
+int cc2538_rf_ext_ctrl_register(struct radio_extender_driver *ctrl);
+
+
 /*---------------------------------------------------------------------------*/
 #endif /* CC2538_RF_H__ */
 

@@ -73,6 +73,8 @@ shell_httpd_init(void)
 {
   shell_register_command(&httpd_command);
 }
+
+#if 0
 /*---------------------------------------------------------------------------*/
 void
 webserver_log_file(uip_ipaddr_t *requester, char *file)
@@ -90,4 +92,6 @@ webserver_log(char *msg)
 {
   shell_output_str(&httpd_command, msg, "");
 }
+
+#endif
 /*---------------------------------------------------------------------------*/

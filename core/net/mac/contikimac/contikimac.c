@@ -269,6 +269,12 @@ static struct timer broadcast_rate_timer;
 static int broadcast_rate_counter;
 #endif /* CONTIKIMAC_CONF_BROADCAST_RATE_LIMIT */
 
+
+mac_sniffer_process mac_sniffer_callback = NULL;
+
+
+
+
 /*---------------------------------------------------------------------------*/
 static void
 on(void)
@@ -1002,7 +1008,7 @@ input_packet(void)
       compower_clear(&current_packet);
 #endif /* CONTIKIMAC_CONF_COMPOWER */
 
-      PRINTDEBUG("contikimac: data (%u)\n", packetbuf_datalen());
+      PRINTDEBUG("contikimac: data (%u)\r\n", packetbuf_datalen());
 
 #if CONTIKIMAC_SEND_SW_ACK
       {
@@ -1024,8 +1030,14 @@ input_packet(void)
       }
 #endif /* CONTIKIMAC_SEND_SW_ACK */
 
-      if(!duplicate) {
-        NETSTACK_MAC.input();
+      if(mac_sniffer_callback)
+      {
+        mac_sniffer_callback(packetbuf_hdrptr(),packetbuf_totlen());
+      }else
+      {
+        if(!duplicate) {
+          NETSTACK_MAC.input();
+        }
       }
       return;
     } else {

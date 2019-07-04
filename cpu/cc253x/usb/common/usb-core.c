@@ -196,6 +196,8 @@ get_string_descriptor()
 static void
 get_configuration_descriptor()
 {
+  
+  PRINTF("get_configuration_descriptor\n");  
   usb_send_ctrl_response((unsigned char *)configuration_head,
                          configuration_head->wTotalLength);
 }
@@ -206,6 +208,17 @@ get_configuration()
   usb_send_ctrl_response((unsigned char *)&usb_configuration_value,
                          sizeof(usb_configuration_value));
 }
+
+
+static void
+get_bos_descriptor()
+{
+  
+  PRINTF("get_bos_descriptor\r\n");  
+  usb_send_ctrl_response((unsigned char *)bos_head,
+                         bos_head->wTotalLength);
+}
+
 
 /* Returns true if the configuration value changed */
 static int
@@ -274,17 +287,21 @@ handle_standard_requests()
     switch (usb_setup_buffer.bRequest) {
     case GET_DESCRIPTOR:
       switch (HIGH_BYTE(usb_setup_buffer.wValue)) {
-      case DEVICE:
+      case USB_DT_DEVICE:
         get_device_descriptor();
         break;
-      case CONFIGURATION:
+      case USB_DT_CONFIGURATION:
         get_configuration_descriptor();
         break;
-      case STRING:
+      case USB_DT_STRING:
         get_string_descriptor();
+        break;
+      case USB_DT_BOS:
+        get_bos_descriptor();
         break;
       default:
         /* Unknown descriptor */
+        PRINTF("\r\nUnknown descriptor:0x%X\n",usb_setup_buffer.wValue);
         return 0;
       }
       break;
@@ -476,20 +493,21 @@ PROCESS_THREAD(usb_process, ev, data)
           if(ctrl_buffer.flags & USB_BUFFER_FAILED) {
             /* Something went wrong with the buffer, just wait for a
                new SETUP packet */
-            PRINTF("Discarded\n");
+            PRINTF("\r\nDiscarded\n");
             submit_setup();
           } else if(ctrl_buffer.flags & USB_BUFFER_SETUP) {
             struct USBRequestHandlerHook *hook = usb_request_handler_hooks;
 
-            PRINTF("Setup\n");
+#ifdef DEBUG
+            PRINTF("\r\nSetup\n");
             {
               unsigned int i;
 
               for(i = 0; i < 8; i++)
                 PRINTF(" %02x", ((unsigned char *)&usb_setup_buffer)[i]);
-              PRINTF("\n");
+              PRINTF("\r\n");
             }
-
+#endif
             while(hook) {
               const struct USBRequestHandler *handler = hook->handler;
 
@@ -506,7 +524,7 @@ PROCESS_THREAD(usb_process, ev, data)
             if(!hook) {
               /* No handler found */
               usb_error_stall();
-              PRINTF("Unhandled setup: %02x %02x %04x %04x %04x\n",
+              PRINTF("\r\nUnhandled setup: %02x %02x %04x %04x %04x\n",
                      usb_setup_buffer.bmRequestType,
                      usb_setup_buffer.bRequest, usb_setup_buffer.wValue,
                      usb_setup_buffer.wIndex, usb_setup_buffer.wLength);
@@ -520,7 +538,7 @@ PROCESS_THREAD(usb_process, ev, data)
           } else {
             if(ctrl_buffer.id == IN_ID) {
               /* Receive status stage */
-              PRINTF("Status OUT\n");
+              PRINTF("\r\nStatus OUT\n");
               ctrl_buffer.flags = USB_BUFFER_NOTIFY;
               ctrl_buffer.next = NULL;
               ctrl_buffer.data = NULL;
@@ -528,10 +546,10 @@ PROCESS_THREAD(usb_process, ev, data)
               ctrl_buffer.id = STATUS_OUT_ID;
               usb_submit_recv_buffer(0, &ctrl_buffer);
             } else if(ctrl_buffer.id == STATUS_OUT_ID) {
-              PRINTF("Status OUT done\n");
+              PRINTF("\r\nStatus OUT done\n");
               submit_setup();
             } else if(ctrl_buffer.id == STATUS_IN_ID) {
-              PRINTF("Status IN done\n");
+              PRINTF("\r\nStatus IN done\n");
               if(usb_flags & USB_FLAG_ADDRESS_PENDING) {
                 while(usb_send_pending(0));
                 usb_arch_set_address(LOW_BYTE(usb_setup_buffer.wValue));
@@ -539,7 +557,7 @@ PROCESS_THREAD(usb_process, ev, data)
               }
               submit_setup();
             } else if(ctrl_buffer.id == OUT_ID) {
-              PRINTF("OUT\n");
+              PRINTF("\r\nOUT\n");
               if(data_callback) {
                 data_callback(ctrl_data, ctrl_data_len - ctrl_buffer.left);
               } else {

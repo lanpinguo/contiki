@@ -45,5 +45,6 @@
 #include "dev/radio.h"
 
 extern const struct rdc_driver contikimac_driver;
-
+typedef int16_t(*mac_sniffer_process)(uint8_t* data,uint16_t len);
+extern mac_sniffer_process mac_sniffer_callback;
 #endif /* CONTIKIMAC_H */
